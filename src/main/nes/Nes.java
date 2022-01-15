@@ -3,9 +3,7 @@ package main.nes;
 public class Nes {
 
 	public static void main(String[] args) throws InterruptedException {
-
-
-		Thread.sleep(8000);
+		Nes nes = new Nes();
 	}
 
 

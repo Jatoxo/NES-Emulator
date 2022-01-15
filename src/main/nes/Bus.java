@@ -16,9 +16,6 @@ public class Bus {
 		busDevices = new ArrayList<>();
 
 		busDevices.add(new Memory());
-
-
-		cpu = new Jtx6502(this);
 	}
 
 

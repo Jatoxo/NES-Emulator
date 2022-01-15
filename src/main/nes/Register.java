@@ -8,6 +8,7 @@ public class Register {
 	}
 
 	private int value;
+	private int bits;
 
 	BitSize size;
 
@@ -17,24 +18,38 @@ public class Register {
 	public Register(int initialValue, BitSize size, String name, String shortName) {
 		this.value = initialValue;
 		this.size = size;
+
+		switch (size) {
+			case BITS_4:
+				bits = 4;
+				break;
+			case BITS_8:
+				bits = 8;
+				break;
+			case BITS_16:
+				bits = 16;
+				break;
+		}
 	}
 
 
 	public void set(int value) {
-		this.value = value;
+		this.value = value % ((int) Math.pow(2, bits));
 	}
 	public int get() {
-		return value;
+		return value & ((int) Math.pow(2, bits));
 	}
 
-	public void increment() {
+	public int increment() {
 		value++;
-		// TODO: Overflow n stuff
+		return get();
 	}
-	public void decrement() {
+	public int decrement() {
 		value--;
-		// TODO: Overflow n stuff
+		return get();
 	}
+
+
 
 
 }
