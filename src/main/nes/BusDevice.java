@@ -6,7 +6,7 @@ public abstract class BusDevice {
 	public int addrStart;
 	public int addrEnd;
 
-	BusDevice(int busStart, int busEnd) {
+	public BusDevice(int busStart, int busEnd) {
 		this.addrStart = busStart;
 		this.addrEnd = busEnd;
 	}
