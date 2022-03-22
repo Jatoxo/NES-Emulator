@@ -7,7 +7,7 @@ public class Register {
 		BITS_16
 	}
 
-	private int value;
+	protected int value;
 	private int bits;
 
 	BitSize size;
@@ -30,23 +30,28 @@ public class Register {
 				bits = 16;
 				break;
 		}
+
+		this.name = name;
+		this.shortName = shortName;
 	}
 
 
 	public void set(int value) {
-		this.value = value % ((int) Math.pow(2, bits));
+		this.value = value & (((int) Math.pow(2, bits)) - 1);
 	}
 	public int get() {
-		return value & ((int) Math.pow(2, bits));
+		return value & (((int) Math.pow(2, bits)) - 1);
 	}
 
 	public int increment() {
 		value++;
-		return get();
+		int ret = get();
+		return ret;
 	}
 	public int decrement() {
 		value--;
-		return get();
+		int ret = get();
+		return ret;
 	}
 
 
