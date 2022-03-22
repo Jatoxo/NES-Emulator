@@ -18,8 +18,14 @@ public class Bus {
 		busDevices.add(new Memory());
 	}
 
+	public void addBusDevice(BusDevice busDevice) {
+		busDevices.add(busDevice);
+	}
+	public void removeBusDevice(BusDevice busDevice) {
+		busDevices.remove(busDevice);
+	}
 
-	public void write(int addr, int data) { //16 Bit address, 8 Bit Data
+	public void write(int addr, int data) { //16-Bit address, 8-Bit Data
 
 		for(BusDevice device : busDevices) {
 
@@ -34,7 +40,7 @@ public class Bus {
 	public int read(int addr, boolean bReadOnly) {
 		for(BusDevice device : busDevices) {
 			if(addr >= device.addrStart && addr <= device.addrEnd) {
-				return device.read(addr);
+				return device.read(addr) & 0xFF;
 			}
 		}
 
