@@ -9,6 +9,7 @@ public class Clock {
 	private static class Listener {
 		private Tickable tickable;
 		private int divisor;
+		private int step;
 		private long cycles;
 
 		public Listener(Tickable listener) {
@@ -17,6 +18,7 @@ public class Clock {
 		public Listener(Tickable listener, int divisor) {
 			this.tickable = listener;
 			this.divisor = divisor;
+			this.step = 0;
 
 			cycles = 0;
 		}
@@ -63,9 +65,11 @@ public class Clock {
 		while(active) {
 
 			for(Listener listener : listeners) {
-				if(cycles % listener.divisor == 0) {
+				if(listener.step == 0) {
+					listener.step = listener.divisor;
 					listener.tick();
 				}
+				listener.step--;
 			}
 
 			cycles++;
