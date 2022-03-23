@@ -12,6 +12,8 @@ public class Nes {
 
 	public static void main(String[] args) throws InterruptedException {
 
+
+
 		Nes nes = new Nes();
 
 		System.out.println("oof");
@@ -24,7 +26,8 @@ public class Nes {
 
 		cpu = new Jtx6502();
 
-		insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
+		//insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
+		insertCartridge("D:\\Users\\Jatoxo\\Downloads\\Donkey Kong.nes");
 
 		controllerPorts = new ControllerPorts();
 		cpu.bus.addBusDevice(controllerPorts);
