@@ -150,7 +150,7 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 	}
 	@Override
 	public int getAddrEnd() {
-		return 0x1FFF;
+		return 0x3FFF;
 	}
 
 
