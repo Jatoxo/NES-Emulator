@@ -706,11 +706,11 @@ public class Jtx6502 implements Tickable {
 
 	public void reset() {
 		//Set Program counter to FFFC-FFFD
-		int lo = read(0XFFFC);
-		int hi = read(0XFFFC + 1);
-		int hib =  hi;
-		int partial = (short) (hi << 8);
-		int full = (short) (partial | lo);
+		//int lo = read(0XFFFC);
+		//int hi = read(0XFFFC + 1);
+		//int hib =  hi;
+		//int partial = (short) (hi << 8);
+		//int full = (short) (partial | lo);
 
 
 		pc.set(read(0XFFFC) | (read(0xFFFC + 1) << 8));

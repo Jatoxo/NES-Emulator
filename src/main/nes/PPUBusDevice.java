@@ -8,5 +8,6 @@ public interface PPUBusDevice {
 
 	int ppuRead(int addr);
 	void ppuWrite(int addr, int data);
+	boolean isEnabled(int addr);
 
 }

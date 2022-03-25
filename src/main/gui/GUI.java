@@ -1,5 +1,7 @@
 package main.gui;
 
+import main.nes.Palette;
+
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import java.awt.*;
@@ -8,7 +10,11 @@ import java.awt.image.BufferedImage;
 import java.util.Random;
 
 public class GUI extends JFrame {
-	private final Dimension screenSize = new Dimension(256, 240);
+
+
+	Color palette[] = Palette.defaultPalette().colors;
+
+	private Dimension screenSize = new Dimension(256, 240);
 
 	public BufferedImage img;
 
@@ -16,6 +22,7 @@ public class GUI extends JFrame {
 
 	public GUI() {
 		super("COCK");
+		//screenSize = new Dimension(1, 1);
 
 		//Theres 9129012 different ways of doing this but this worky
 		setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/Nes_controller.svg.png")));
@@ -52,7 +59,7 @@ public class GUI extends JFrame {
 		});
 
 
-
+		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setMinimumSize(new Dimension(500, 400));
 		setSize(screenSize);
 		setLocationRelativeTo(null);
@@ -70,8 +77,8 @@ public class GUI extends JFrame {
 		Random r = new Random();
 		for(int y = 0; y < screenSize.height; y++) {
 			for(int x = 0; x < screenSize.width; x++) {
-				int i = r.nextInt();
-				img.setRGB(x,y,i);
+				int i = r.nextInt(palette.length);
+				img.setRGB(x,y,palette[i].getRGB());
 			}
 		}
 		Image newImg = img.getScaledInstance(render.getWidth(), render.getHeight(), Image.SCALE_DEFAULT);
@@ -84,10 +91,10 @@ public class GUI extends JFrame {
 
 		GUI gui = new GUI();
 
-
+		Random r = new Random();
 		while(true) {
 			try {
-				Thread.sleep(33);
+				Thread.sleep(16 * (r.nextInt(2) + 1) );
 			} catch(InterruptedException e) {
 				e.printStackTrace();
 			}

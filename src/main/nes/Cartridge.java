@@ -1,11 +1,16 @@
 package main.nes;
 
+import main.nes.mappers.Mapper;
+import main.nes.mappers.NROM;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+
+import static main.nes.mappers.Mapper.*;
 
 public class Cartridge extends BusDevice implements PPUBusDevice{
 	public static final int ppuAddrStart = 0;
@@ -17,7 +22,7 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 	int chrRomChunks; //8kb units
 
 
-	int Mirroring = 1 << 0; //Mirroring: 0: horizontal (vertical arrangement) (CIRAM A10 = PPU A11)
+	int mirroring = 1 << 0; //Mirroring: 0: horizontal (vertical arrangement) (CIRAM A10 = PPU A11)
 							//1: vertical (horizontal arrangement) (CIRAM A10 = PPU A10)
 	int prgRam = 1 << 1;    //1: Cartridge contains battery-backed PRG RAM ($6000-7FFF) or other persistent memory
 	int trainer = 1 << 2;   //1: 512-byte trainer at $7000-$71FF (stored before PRG data)
@@ -35,11 +40,12 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 	int flags7;
 
 	int mapperId;
+	private Mapper mapper;
 
 
 
 	public Cartridge(String file) {
-		super(0x8000, 0xFFFF);
+		super(0x4020, 0xFFFF);
 
 		chrRom = new ArrayList<>();
 		pgrRom = new ArrayList<>();
@@ -102,6 +108,10 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 
 			int size = pgrRomChunks * 16384;
 
+
+
+			//TODO: Fix this horrible abomination (by using arraycopy or something)
+			//I could change it but I know this works so not yet
 			int j = 0;
 			for(int i = 16 + (train ? 512 : 0); i < bytes.length; i++) {
 				if(j < size) {
@@ -113,6 +123,21 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 
 			}
 
+			//Just... no
+			byte[] pgrRomB = new byte[pgrRom.size()];
+			for(int i = 0; i < pgrRom.size(); i++) {
+				pgrRomB[i] = pgrRom.get(i);
+			}
+			byte[] chrRomB = new byte[chrRom.size()];
+			for(int i = 0; i < chrRom.size(); i++) {
+				chrRomB[i] = chrRom.get(i);
+			}
+
+			switch(mapperId) {
+				case NROM:
+					mapper = new NROM(pgrRomB, pgrRomChunks, chrRomB, mirrorMode());
+					break;
+			}
 			System.out.println("Donee");
 
 		} catch(IOException e) {
@@ -121,9 +146,23 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 
 	}
 
+	private MirrorMode mirrorMode() {
+
+		return (flags6 & mirroring) > 0 ? MirrorMode.VERTICAL : MirrorMode.HORIZONTAL;
+	}
+
+	public Mapper.MirrorMode getMirrorMode(int address) {
+		return mapper.getMirrorMode(address);
+	}
+
+	//whether the CIRAM is enabled when accessing this address
+	public boolean isCIRAMEnabled(int address) {
+		return mapper.isCIRAMEnabled(address);
+	}
+
 	@Override
 	public int read(int addr) {
-		byte thing = pgrRom.get(addr & 0x3FFF);
+		byte thing = (byte) mapper.cpuRead(addr & 0xFFFF);
 		return thing;
 	}
 
@@ -134,14 +173,20 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 
 	@Override
 	public int ppuRead(int addr) {
-		return 0;
+		addr &= 0x3FFF;
+		return mapper.ppuRead(addr);
 	}
 	@Override
 	public void ppuWrite(int addr, int data) {
-
+		addr &= 0x3FFF;
+		data &= 0xFF;
+		mapper.ppuWrite(addr, data);
 	}
 
-
+	@Override
+	public boolean isEnabled(int addr) {
+		return mapper.isChrRomEnabled(addr);
+	}
 
 
 	@Override

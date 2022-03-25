@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class Bus {
-	Jtx6502 cpu;
 
 	ArrayList<BusDevice> busDevices;
 
