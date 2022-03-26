@@ -61,7 +61,22 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 			flags6 = romFile[6];
 			flags7 = romFile[7];
 
-			mapperId = (flags6 & mapIdLo) | ((flags7 & mapIdHi) << 8);
+
+			boolean nes2 = ((flags7 & nes2id) >> 2) == 2;
+			System.out.print("NES2.0 Format: ");
+			if(nes2) {
+				System.out.println("Yes");
+			} else {
+				System.out.println("No");
+			}
+
+
+			int adDetection = romFile[12] | romFile[13] | romFile[14] | romFile[15];
+			if(adDetection > 0 && !nes2) {
+				//There is probably some garbage spelled across the flags here
+				flags7 &= 0x0F;
+			}
+			mapperId = (flags6 & mapIdLo) | ((flags7 & mapIdHi) << 4);
 
 			System.out.println("Mapper ID: " + mapperId);
 			System.out.print("Console Type: ");
@@ -92,13 +107,7 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 				System.out.println("Yes");
 			}
 
-			boolean nes2 = ((flags7 & nes2id) >> 2) == 2;
-			System.out.print("NES2.0 Format: ");
-			if(nes2) {
-				System.out.println("Yes");
-			} else {
-				System.out.println("No");
-			}
+
 
 			int prgRomSize = pgrRomChunks * 16384;
 
@@ -113,6 +122,8 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 				case NROM:
 					mapper = new NROM(programRom, pgrRomChunks, chrRom, mirrorMode());
 					break;
+				default:
+					System.out.println("Unknown Mapper");
 			}
 
 
