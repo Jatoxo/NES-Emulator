@@ -154,7 +154,7 @@ public class GUI extends JFrame {
 	public void repaint() {
 		super.repaint();
 
-
+		/*
 		Random r = new Random();
 		for(int y = 200; y < screenSize.height; y++) {
 			for(int x = 200; x < screenSize.width; x++) {
@@ -162,6 +162,8 @@ public class GUI extends JFrame {
 				img.setRGB(x,y,palette[i].getRGB());
 			}
 		}
+		
+		 */
 
 
 		Image newImg = img.getScaledInstance(render.getWidth(), render.getHeight(), Image.SCALE_DEFAULT);

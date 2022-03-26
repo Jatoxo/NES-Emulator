@@ -189,23 +189,24 @@ public class PPU extends BusDevice implements Tickable {
 		for(int nameT = 0; nameT < 960; nameT++) {
 
 			int chrIndex = ppuRead(0x2000 + nameT);
-			if(ppuCtrl.getFlag("S") > 0) {
-				chrIndex += 0x2000;
-				System.out.println("a");
-			}
+
 			if(chrIndex == 0x62) {
 				System.out.println("hit");
 			}
 
+			int halfSelect = ppuCtrl.isSet("B") ? 0x1000 : 0;
+
 			byte[] chrPlane0 = new byte[8];
 			for(int i = 0; i < 8; i++) {
 				int addr = (chrIndex << 4) + i;
+				addr |= halfSelect;
 				chrPlane0[i] = (byte) ppuRead(addr);
 			}
 
-			byte[] chrPlane1 = new byte[8*8];
+			byte[] chrPlane1 = new byte[8];
 			for(int i = 0; i < 8; i++) {
 				int addr = (chrIndex << 4) + i;
+				addr |= halfSelect;
 
 				addr |= 0x8; //Select bitplane 1
 
