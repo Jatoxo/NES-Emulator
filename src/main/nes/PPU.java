@@ -7,6 +7,21 @@ public class PPU extends BusDevice implements Tickable {
 	public static final int SCREEN_WIDTH = 256;
 	public static final int SCREEN_HEIGHT = 240;
 
+
+	// 98 7654 3210
+	// || |||| ||||
+	// || |||| ||||
+	// || |||+-++++- x-Position in Nametable
+	// ++-+++----- y-Position in Nametable
+
+
+	//7654 3210
+	//|||| ||||
+	//|||| ||||
+	//|||+-  ++- Palette Index
+	//+++----- y-Position in Nametable
+
+
 	Nes nes;
 
 	BufferedImage output;
@@ -78,7 +93,7 @@ public class PPU extends BusDevice implements Tickable {
 	FlagRegister ppuData = new FlagRegister(0x00, Register.BitSize.BITS_8, "PPU Data", "PPUDATA", 0x2007);
 
 
-
+	private int readBuffer = 0; //https://www.nesdev.org/wiki/PPU_registers#:~:text=avoid%20wrong%20scrolling.-,The%20PPUDATA%20read%20buffer%20(post%2Dfetch),-When%20reading%20while
 
 	private int addressLatch = 0;
 
@@ -190,10 +205,6 @@ public class PPU extends BusDevice implements Tickable {
 
 			int chrIndex = ppuRead(0x2000 + nameT);
 
-			if(chrIndex == 0x62) {
-				System.out.println("hit");
-			}
-
 			int halfSelect = ppuCtrl.isSet("B") ? 0x1000 : 0;
 
 			byte[] chrPlane0 = new byte[8];
@@ -218,10 +229,32 @@ public class PPU extends BusDevice implements Tickable {
 				for(int pixel = 0; pixel < 8; pixel++) {
 					int bit0 = (chrPlane0[row] >> 7-pixel) & 1;
 					int bit1 = (chrPlane1[row] >> 7-pixel) & 1;
-					int color = bit0 | bit1 << 1 ;
+					int colorSelect = bit0 | bit1 << 1 ;
 
-					//Todo: Assuming palette 0 for now
-					int paletteIndex = color;
+
+					int nameTX = nameT & 0x1F;
+					int nameTY = (nameT & 0x3E0) >> 5;
+
+					int attrTX = nameTX >> 2;
+					int attrTY = nameTY >> 2;
+
+					int attrIndex = attrTX | (attrTY << 3);
+
+					int attrByte = ppuRead(0x2000 | 0x3C0 | attrIndex);
+
+					int byteX = nameTX & 0x2;
+					int byteY = nameTY & 0x2;
+
+					int shift = byteX | (byteY << 1);
+
+					int paletteSelect = (attrByte >> shift) & 0x3;
+
+					//The index into the palette ram (4 Bits, 5th bit is only set for Sprite palette)
+					int paletteIndex = colorSelect | (paletteSelect << 2);
+
+					//Any value 0bXX00 mirrors the universal background color at 0b0000
+					paletteIndex = ((paletteIndex & 0x3) == 0) ? 0 : paletteIndex;
+
 					int colorByte = palleteRam[paletteIndex];
 					int rgbOut = palette.colors[colorByte].getRGB();
 
@@ -273,6 +306,11 @@ public class PPU extends BusDevice implements Tickable {
 		if(addr >= PALLETE_RAM_INDEX_START) {
 			//Mask out 5 bits for mirroring
 			addr &= 0x1F;
+
+			//When two last bits are 0, disable bit A4 (To force Background Palette) since these are mirrors of those locations
+			if((addr & 0x3) == 0) {
+				addr &= 0xF;
+			}
 			palleteRam[addr] = (byte) data;
 
 			return;
@@ -302,11 +340,22 @@ public class PPU extends BusDevice implements Tickable {
 
 
 		} else if(addr == ppuData.address) {
-			int val = ppuAddr.get();
+			int val;
+			if(ppuAddr.get() < PALLETE_RAM_INDEX_START) {
+				val = readBuffer;
+
+				readBuffer = ppuRead(ppuAddr.get());
+
+			} else {
+				val = ppuRead(ppuAddr.get());
+
+				//Internal read buffer "bypasses" the color index ram and reads from the underlying memory instead (probably CIRAM)
+				readBuffer = ppuBus.read(ppuAddr.get());
+			}
 
 			ppuAddr.set(ppuAddr.get() + ((ppuCtrl.getFlag("I") > 0) ? 32 : 1));
 
-			return ppuRead(val);
+			return val;
 
 
 		}

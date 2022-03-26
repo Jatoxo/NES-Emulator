@@ -34,7 +34,7 @@ public class Nes {
 		ppu = new PPU(this);
 
 		//insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
-		insertCartridge("D:\\Users\\Jatoxo\\Downloads\\Donkey Kong.nes");
+		insertCartridge("D:\\GamesSoftware\\ZZ Emulators\\NES\\Games\\mbr.nes");
 
 		controllerPorts = new ControllerPorts();
 		cpu.bus.addBusDevice(controllerPorts);
