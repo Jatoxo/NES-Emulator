@@ -1,5 +1,6 @@
 package main.nes;
 
+import main.gui.GUI;
 import main.input.Controller;
 import main.input.ControllerPorts;
 import main.input.StandardController;
@@ -8,30 +9,32 @@ import main.input.StandardController;
 public class Nes {
 	public Cartridge cartridge;
 
-	private Jtx6502 cpu;
-	private PPU ppu;
+	public Jtx6502 cpu;
+	public PPU ppu;
 	private Clock clock;
-	private ControllerPorts controllerPorts;
+	public ControllerPorts controllerPorts;
+	public GUI gui;
 
 	public static void main(String[] args) throws InterruptedException {
 
 
 
 
-		Nes nes = new Nes();
+		//Nes nes = new Nes();
 
 		System.out.println("oof");
 	}
 
 
 
-	public Nes() {
+	public Nes(GUI gui) {
+		this.gui = gui;
 
 		cpu = new Jtx6502();
-		ppu = new PPU();
+		ppu = new PPU(this);
 
 		//insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
-		insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
+		insertCartridge("D:\\Users\\Jatoxo\\Downloads\\Donkey Kong.nes");
 
 		controllerPorts = new ControllerPorts();
 		cpu.bus.addBusDevice(controllerPorts);
@@ -42,8 +45,12 @@ public class Nes {
 		clock = new Clock(Clock.NTSC_MASTER_CLOCK_SPEED);
 		clock.addListener(cpu, 12);
 		clock.addListener(ppu, 4); //ppu go brrrrrr
-		clock.start();
 
+
+	}
+
+	public void start() {
+		clock.start();
 	}
 
 	public void insertCartridge(String filePath) {

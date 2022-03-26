@@ -15,7 +15,12 @@ public class Register {
 	String name;
 	String shortName;
 
+	int address;
+
 	public Register(int initialValue, BitSize size, String name, String shortName) {
+		this(initialValue, size, name, shortName, 0);
+	}
+	public Register(int initialValue, BitSize size, String name, String shortName, int address) {
 		this.value = initialValue;
 		this.size = size;
 
@@ -33,6 +38,7 @@ public class Register {
 
 		this.name = name;
 		this.shortName = shortName;
+		this.address = address;
 	}
 
 
@@ -43,14 +49,18 @@ public class Register {
 		return value & (((int) Math.pow(2, bits)) - 1);
 	}
 
+	//Return the current value, then increment the Register
 	public int increment() {
-		value++;
 		int ret = get();
+		value++;
+
 		return ret;
 	}
+
+	//Return the current value, then decrement the Register
 	public int decrement() {
-		value--;
 		int ret = get();
+		value--;
 		return ret;
 	}
 

@@ -69,6 +69,8 @@ public class Instruction {
 	int addressingMode;
 	int operation;
 	int cycles;
+
+	public int address;
 	
 	public Instruction(String mnemonic, int operation, int addressingMode, int cycles, int opcode) {
 		this.mnemonic = mnemonic;

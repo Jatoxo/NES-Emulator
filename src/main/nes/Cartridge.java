@@ -13,10 +13,6 @@ import java.util.ArrayList;
 import static main.nes.mappers.Mapper.*;
 
 public class Cartridge extends BusDevice implements PPUBusDevice{
-	public static final int ppuAddrStart = 0;
-
-	ArrayList<Byte> chrRom;
-	ArrayList<Byte> pgrRom;
 
 	int pgrRomChunks; //16kb units
 	int chrRomChunks; //8kb units
@@ -47,25 +43,23 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 	public Cartridge(String file) {
 		super(0x4020, 0xFFFF);
 
-		chrRom = new ArrayList<>();
-		pgrRom = new ArrayList<>();
 
 		Path path = Paths.get(file);
 
 
 
-		byte[] bytes;
+		byte[] romFile;
 		try {
-			bytes = Files.readAllBytes(path);
+			romFile = Files.readAllBytes(path);
 
-			if(bytes[0] == 0x4E && bytes[1] == 0x45 && bytes[2] == 0x53 && bytes[3] == 0x1A) {
+			if(romFile[0] == 0x4E && romFile[1] == 0x45 && romFile[2] == 0x53 && romFile[3] == 0x1A) {
 				System.out.println("iNES file format detected");
 			}
 
-			pgrRomChunks = bytes[4];
-			chrRomChunks = bytes[5];
-			flags6 = bytes[6];
-			flags7 = bytes[7];
+			pgrRomChunks = romFile[4];
+			chrRomChunks = romFile[5];
+			flags6 = romFile[6];
+			flags7 = romFile[7];
 
 			mapperId = (flags6 & mapIdLo) | ((flags7 & mapIdHi) << 8);
 
@@ -106,45 +100,28 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 				System.out.println("No");
 			}
 
-			int size = pgrRomChunks * 16384;
+			int prgRomSize = pgrRomChunks * 16384;
 
+			byte[] programRom = new byte[prgRomSize];
+			System.arraycopy(romFile, 16 + (train ? 512 : 0), programRom, 0, programRom.length);
 
+			byte[] chrRom = new byte[chrRomChunks * 8192];
+			System.arraycopy(romFile, 16 + prgRomSize + (train ? 512 : 0), chrRom, 0, chrRom.length);
 
-			//TODO: Fix this horrible abomination (by using arraycopy or something)
-			//I could change it but I know this works so not yet
-			int j = 0;
-			for(int i = 16 + (train ? 512 : 0); i < bytes.length; i++) {
-				if(j < size) {
-					pgrRom.add(bytes[i]);
-					//pgrRom.set(j, bytes[i]);
-				}
-				j++;
-
-
-			}
-
-			//Just... no
-			byte[] pgrRomB = new byte[pgrRom.size()];
-			for(int i = 0; i < pgrRom.size(); i++) {
-				pgrRomB[i] = pgrRom.get(i);
-			}
-			byte[] chrRomB = new byte[chrRom.size()];
-			for(int i = 0; i < chrRom.size(); i++) {
-				chrRomB[i] = chrRom.get(i);
-			}
 
 			switch(mapperId) {
 				case NROM:
-					mapper = new NROM(pgrRomB, pgrRomChunks, chrRomB, mirrorMode());
+					mapper = new NROM(programRom, pgrRomChunks, chrRom, mirrorMode());
 					break;
 			}
-			System.out.println("Donee");
+
 
 		} catch(IOException e) {
 			e.printStackTrace();
 		}
 
 	}
+
 
 	private MirrorMode mirrorMode() {
 

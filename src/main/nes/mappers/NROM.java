@@ -49,7 +49,8 @@ public class NROM extends Mapper {
 
 	@Override
 	public int ppuRead(int address) {
-		//Todo mask out like i did with cpu read idk maybe not necessary bc starts at 0
+		//CHR ROM starts at 0x0000, and is 8kb in size (0x0000 - 0x1FFF)
+		//CHR ROM will be disabled when bit 13 of the address is set (CIRAM is enabled)
 		return chrRom[address] & 0xFF;
 	}
 

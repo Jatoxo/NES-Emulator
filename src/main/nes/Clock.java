@@ -64,13 +64,15 @@ public class Clock {
 
 		while(active) {
 
+
 			for(Listener listener : listeners) {
-				if(listener.step == 0) {
+				if(listener.step <= 0) {
 					listener.step = listener.divisor;
 					listener.tick();
 				}
 				listener.step--;
 			}
+
 
 			cycles++;
 		}

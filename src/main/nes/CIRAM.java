@@ -3,7 +3,7 @@ package main.nes;
 import main.nes.mappers.Mapper;
 
 public class CIRAM implements PPUBusDevice {
-	private final int CIRAM_SIZE = 1<<10;
+	private final int CIRAM_SIZE = 1<<11;
 	private Nes nes;
 
 	private byte[] fakeCiram = new byte[CIRAM_SIZE];
@@ -56,7 +56,7 @@ public class CIRAM implements PPUBusDevice {
 
 	@Override
 	public int getAddrEnd() {
-		return (1<<13) - 1;
+		return 0x3FFF;
 	}
 
 

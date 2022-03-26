@@ -1,5 +1,7 @@
 package main.gui;
 
+import main.input.StandardController;
+import main.nes.Nes;
 import main.nes.Palette;
 
 import javax.swing.*;
@@ -20,8 +22,12 @@ public class GUI extends JFrame {
 
 	private JLabel render;
 
+	private Nes nes;
+
 	public GUI() {
 		super("COCK");
+
+
 		//screenSize = new Dimension(1, 1);
 
 		//Theres 9129012 different ways of doing this but this worky
@@ -58,12 +64,86 @@ public class GUI extends JFrame {
 			}
 		});
 
+		requestFocus();
+		addKeyListener(new KeyListener() {
+			@Override
+			public void keyTyped(KeyEvent e) {
+
+			}
+
+			@Override
+			public void keyPressed(KeyEvent e) {
+				StandardController controller = (StandardController) nes.controllerPorts.player1;
+				switch(e.getKeyChar()) {
+					case 'w':
+						controller.dpadUp = true;
+						break;
+					case 'a':
+						controller.dpadLeft = true;
+						break;
+					case 's':
+						controller.dpadDown = true;
+						break;
+					case 'd':
+						controller.dpadRight = true;
+						break;
+					case 'o':
+						controller.buttonA = true;
+						break;
+					case 'p':
+						controller.buttonB = true;
+						break;
+					case ',':
+						controller.buttonSelect = true;
+						break;
+					case '.':
+						controller.buttonStart = true;
+						break;
+
+
+				}
+			}
+
+			@Override
+			public void keyReleased(KeyEvent e) {
+				StandardController controller = (StandardController) nes.controllerPorts.player1;
+				switch(e.getKeyChar()) {
+					case 'w':
+						controller.dpadUp = false;
+						break;
+					case 'a':
+						controller.dpadLeft = false;
+						break;
+					case 's':
+						controller.dpadDown = false;
+						break;
+					case 'd':
+						controller.dpadRight = false;
+						break;
+					case 'o':
+						controller.buttonA = false;
+						break;
+					case 'p':
+						controller.buttonB = false;
+						break;
+					case ',':
+						controller.buttonSelect = false;
+						break;
+					case '.':
+						controller.buttonStart = false;
+						break;
+				}
+
+			}
+		});
 
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setMinimumSize(new Dimension(500, 400));
 		setSize(screenSize);
 		setLocationRelativeTo(null);
 		setVisible(true);
+
+		this.nes = new Nes(this);
 	}
 
 	public void recock() {
@@ -74,23 +154,30 @@ public class GUI extends JFrame {
 	public void repaint() {
 		super.repaint();
 
+
 		Random r = new Random();
-		for(int y = 0; y < screenSize.height; y++) {
-			for(int x = 0; x < screenSize.width; x++) {
+		for(int y = 200; y < screenSize.height; y++) {
+			for(int x = 200; x < screenSize.width; x++) {
 				int i = r.nextInt(palette.length);
 				img.setRGB(x,y,palette[i].getRGB());
 			}
 		}
+
+
 		Image newImg = img.getScaledInstance(render.getWidth(), render.getHeight(), Image.SCALE_DEFAULT);
 		render.setIcon(new ImageIcon(newImg));
 
+	}
 
+	public void renderScreen(BufferedImage screen) {
+		img = screen;
+		repaint();
 	}
 
 	public static void main(String[] args) {
-
 		GUI gui = new GUI();
-
+		gui.nes.start();
+		/*
 		Random r = new Random();
 		while(true) {
 			try {
@@ -100,6 +187,7 @@ public class GUI extends JFrame {
 			}
 			gui.recock();
 		}
+		 */
 	}
 
 

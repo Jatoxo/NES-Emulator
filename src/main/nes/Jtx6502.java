@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Locale;
 
 import static main.nes.Instruction.*;
 
@@ -100,16 +101,39 @@ public class Jtx6502 implements Tickable {
 
 	}
 
+	public void logCpuState() {
+		System.out.print(String.format("%x", currentInstruction.address).toUpperCase());
+		System.out.print(String.format(" %x", currentInstruction.opcode).toUpperCase()); //First instruction byte (opcode)
+		System.out.print("  ");
+		System.out.print(currentInstruction.mnemonic); //Mnemonic
+		System.out.print("                      ");
 
+		System.out.print(String.format("A:%02x ", a.get()).toUpperCase());
+		System.out.print(String.format("X:%02x ", x.get()).toUpperCase());
+		System.out.print(String.format("Y:%02x ", y.get()).toUpperCase());
+		System.out.print(String.format("P:%02x ", status).toUpperCase());
+		System.out.print(String.format("SP:%02x ", s.get()).toUpperCase());
+
+
+		System.out.println(" CYC: " + totalCycles);
+	}
 
 	public void clockCycle() {
-		totalCycles++;
+
+
 
 		if(cycles == 0) {
 			opcode = read(pc.get());
-			pc.increment();
 
 			currentInstruction = Instruction.fromOpCode((byte) opcode);
+			currentInstruction.address = pc.get();
+
+			pc.increment();
+
+
+			//logCpuState();
+
+
 			cycles = currentInstruction.cycles;
 
 			/*
@@ -129,6 +153,7 @@ public class Jtx6502 implements Tickable {
 		}
 
 		cycles--;
+		totalCycles++;
 	}
 
 	private void executeInstruction(Instruction instruction) {
@@ -667,10 +692,11 @@ public class Jtx6502 implements Tickable {
 				int offset = read(pc.increment());
 
 
-				if((offset & (1<<8)) == 0) {
+				if((offset & (1<<7)) == 0) {
 					addr = pc.get() + offset;
 				} else {
-					addr = pc.get() + (~offset + 1); //todo: this is dumb
+					int noffset = ((~offset) + 1) & 0xFF;
+					addr = pc.get() - noffset; //todo: this is dumb
 				}
 
 				if((addr & 0xFF00) != (pc.get() & 0xFF00)) {
@@ -714,7 +740,7 @@ public class Jtx6502 implements Tickable {
 
 
 		pc.set(read(0XFFFC) | (read(0xFFFC + 1) << 8));
-		pc.set(0x0C000); //To get nestest to work without ppu
+		//pc.set(0x0C000); //To get nestest to work without ppu
 
 		// Reset internal registers
 		a.set(0);
@@ -729,7 +755,7 @@ public class Jtx6502 implements Tickable {
 		totalCycles = 0;
 
 		// Reset takes time
-		cycles = 8;
+		cycles = 7;
 	}
 
 	public void irq() { //Interrupt request signal
