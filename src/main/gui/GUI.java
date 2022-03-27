@@ -4,6 +4,10 @@ import main.input.StandardController;
 import main.nes.Nes;
 import main.nes.Palette;
 
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.SourceDataLine;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import java.awt.*;
@@ -36,7 +40,7 @@ public class GUI extends JFrame {
 
 		img = new BufferedImage(screenSize.width, screenSize.height, BufferedImage.TYPE_INT_RGB);
 
-
+		/*
 		Random r = new Random();
 		for(int y = 0; y < screenSize.height; y++) {
 			for(int x = 0; x < screenSize.width; x++) {
@@ -44,6 +48,8 @@ public class GUI extends JFrame {
 				img.setRGB(x,y,i);
 			}
 		}
+
+		 */
 
 
 		render = new JLabel(new ImageIcon(img));
@@ -156,14 +162,15 @@ public class GUI extends JFrame {
 
 		/*
 		Random r = new Random();
-		for(int y = 200; y < screenSize.height; y++) {
-			for(int x = 200; x < screenSize.width; x++) {
+		for(int y = 0; y < screenSize.height; y++) {
+			for(int x = 255; x < screenSize.width; x++) {
 				int i = r.nextInt(palette.length);
 				img.setRGB(x,y,palette[i].getRGB());
 			}
 		}
-		
 		 */
+
+
 
 
 		Image newImg = img.getScaledInstance(render.getWidth(), render.getHeight(), Image.SCALE_DEFAULT);
@@ -176,9 +183,39 @@ public class GUI extends JFrame {
 		repaint();
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws InterruptedException, LineUnavailableException {
+
+		/*
+		AudioFormat format = new AudioFormat(
+				500,
+				16,//bit
+				1,//channel
+				true,//signed
+				false //little endian
+		);
+		SourceDataLine line = AudioSystem.getSourceDataLine(format);
+		line.open();
+		line.start();
+		while(true) {
+			Thread.sleep(3);
+			System.out.println("Bop");
+
+
+			byte[] b = new byte[2];
+			b[0] = 0x40;
+			b[1] = 0x40;
+
+			System.out.println(line.available());
+			line.write(b, 0, 2);
+
+		}
+
+		 */
+
 		GUI gui = new GUI();
 		gui.nes.start();
+
+
 		/*
 		Random r = new Random();
 		while(true) {

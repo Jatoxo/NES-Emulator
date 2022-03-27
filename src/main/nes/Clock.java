@@ -59,6 +59,18 @@ public class Clock {
 	}
 
 
+	public void tick() {
+		for(Listener listener : listeners) {
+			if(listener.step <= 0) {
+				listener.step = listener.divisor;
+				listener.tick();
+			}
+			listener.step--;
+		}
+
+		cycles++;
+	}
+
 	public void start() {
 		active = true;
 

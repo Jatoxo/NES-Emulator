@@ -30,11 +30,11 @@ public class Nes {
 	public Nes(GUI gui) {
 		this.gui = gui;
 
-		cpu = new Jtx6502();
+		cpu = new Jtx6502(this);
 		ppu = new PPU(this);
 
 		//insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
-		insertCartridge("D:\\GamesSoftware\\ZZ Emulators\\NES\\Games\\mbr.nes");
+		insertCartridge("D:\\GamesSoftware\\ZZ Emulators\\NES\\Games\\Donkey Kong.nes");
 
 		controllerPorts = new ControllerPorts();
 		cpu.bus.addBusDevice(controllerPorts);

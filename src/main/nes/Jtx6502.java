@@ -25,7 +25,7 @@ public class Jtx6502 implements Tickable {
 
 
 
-
+	Nes nes;
 
 	Bus bus;
 	Clock clock;
@@ -70,7 +70,8 @@ public class Jtx6502 implements Tickable {
 	int index = 0;
 	 */
 
-	public Jtx6502() {
+	public Jtx6502(Nes nes) {
+		this.nes = nes;
 		this.bus = new Bus();
 
 		statusF.addFlag("Carry", "C", C);
@@ -823,6 +824,24 @@ public class Jtx6502 implements Tickable {
 
 
 	public void write(int addr, int data) { //16-Bit address, 8-Bit Data
+		addr &= 0xFFFF;
+		data &= 0xFF;
+
+		//OAM memory DMA transfer
+		//Transfer 256 bytes from 0xDD00 until 0xDDFF to fill the OAM of the PPU
+		if(addr == 0x4014) {
+			//Odd cpu cycle results in extra idle cycle
+			//https://www.nesdev.org/wiki/PPU_OAM#:~:text=(%2B1%20on%20odd%20CPU%20cycles)
+			cycles += ((totalCycles & 1) == 0) ? 1 : 2;
+
+			for(int i = 0; i < 256; i++) {
+				int readAddr = (data << 8) | i;
+				bus.write(PPU.OAMDATA, bus.read(readAddr, false));
+				cycles += 2;
+			}
+			//In total this should have added either 513 or 514 cycles
+		}
+
 		bus.write(addr, data);
 	}
 

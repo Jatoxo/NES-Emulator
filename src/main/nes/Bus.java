@@ -29,7 +29,7 @@ public class Bus {
 		for(BusDevice device : busDevices) {
 
 			if(addr >= device.addrStart && addr <= device.addrEnd) {
-				device.write(addr, data);
+				device.write(addr, data & 0xFF);
 				return;
 			}
 		}
