@@ -347,7 +347,7 @@ public class PPU extends BusDevice implements Tickable {
 		//Todo: ignoring sprite priority for now and just plonking them on the screen
 		//Todo: Also ignoring 8x16 sprites fuck those
 		//loop over secondaryOAM in reverse order (OAM now because im rendering all sprites at once and the evaluation is for every scanline)
-		for(int i = 0x60; i > -1; i -= 4) {
+		for(int i = 0xFC; i > -1; i -= 4) {
 			int y = OAM[i] & 0xFF;
 			int x = OAM[i+3] & 0xFF;
 
