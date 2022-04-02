@@ -58,22 +58,15 @@ public class ControllerPorts extends BusDevice {
 
 		//When the latch is no longer set the shift registers maintain the controllers' state at that moment
 		if(lastWrite && !newWrite) {
-			Controller player = null;
+
 			//The controllers should save their state in their shift register (The poll method of the controller handles this)
-			switch(addr) {
-				case 0x4016:
-					player = player1;
-					break;
-				case 0x4017:
-					player = player2;
-					break;
+			if(player1 != null) {
+				player1.poll();
+			}
+			if(player2 != null) {
+				player2.poll();
 			}
 
-			if(player == null) {
-				return;
-			}
-
-			player.poll();
 
 		}
 

@@ -270,6 +270,10 @@ public class PPU extends BusDevice implements Tickable {
 			ppuStatus.set(val);
 
 			if(ppuCtrl.isSet("V")) {
+				//Todo: This shouldn't be allowed to stop the cpu during executing an instruction, it should wait until it is finished
+				//Due to the current implementation, this might work fine. Instruction are executed whole and the the cpu idle cycles until the correct amount
+				//of cycles for each instruction has passed. The only side effect of doing it this way is that the nmi may be called earlier than intended during the cpu's
+				//idle cycles
 				nes.cpu.nmi();
 			}
 
