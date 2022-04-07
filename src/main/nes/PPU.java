@@ -1,5 +1,7 @@
 package main.nes;
 
+import main.jorit.rendererererer;
+
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
@@ -238,7 +240,9 @@ public class PPU extends BusDevice implements Tickable {
 
 	//Called for every cycle on the visible scanline
 	//Scanline 0 - 239
+	main.jorit.rendererererer ren = new rendererererer();
 	private void visibleScanlineCycle(int scanline, int scanlineCycle) {
+		ren.start();
 		if(scanline == 30 && scanlineCycle == 64) {
 			//TODO: This is faking a sprite 0 hit for SMB
 			ppuStatus.setFlag("S", true);
@@ -254,6 +258,7 @@ public class PPU extends BusDevice implements Tickable {
 			renderBackground();
 			renderSprites();
 			nes.gui.renderScreen(output);
+			ren.renderScreen(output);
 			//clear output to distinguish sprites
 			//output = new BufferedImage(SCREEN_WIDTH, SCREEN_HEIGHT, BufferedImage.TYPE_INT_RGB);
 		}
