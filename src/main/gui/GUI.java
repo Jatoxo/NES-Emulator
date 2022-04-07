@@ -1,6 +1,9 @@
 package main.gui;
 
+import com.formdev.flatlaf.FlatDarculaLaf;
+import com.formdev.flatlaf.FlatLightLaf;
 import main.input.StandardController;
+import main.nes.Memory;
 import main.nes.Nes;
 import main.nes.Palette;
 
@@ -34,31 +37,13 @@ public class GUI extends JFrame {
 
 		//screenSize = new Dimension(1, 1);
 
-		//Theres 9129012 different ways of doing this but this worky
-		setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/Nes_controller.svg.png")));
+
 
 
 		img = new BufferedImage(screenSize.width, screenSize.height, BufferedImage.TYPE_INT_RGB);
 
-		/*
-		Random r = new Random();
-		for(int y = 0; y < screenSize.height; y++) {
-			for(int x = 0; x < screenSize.width; x++) {
-				int i = r.nextInt();
-				img.setRGB(x,y,i);
-			}
-		}
-
-		 */
-
-
 		render = new JLabel(new ImageIcon(img));
 
-
-		LineBorder b = new LineBorder(Color.BLACK);
-
-		//render.setBorder(BorderFactory.createStrokeBorder(new BasicStroke(5.0f)));
-		//setContentPane(render);
 		getContentPane().add(render, BorderLayout.CENTER);
 
 
@@ -80,76 +65,122 @@ public class GUI extends JFrame {
 			@Override
 			public void keyPressed(KeyEvent e) {
 				StandardController controller = (StandardController) nes.controllerPorts.player1;
-				switch(e.getKeyChar()) {
-					case 'w':
+				switch(e.getKeyCode()) {
+					case KeyEvent.VK_W:
 						controller.dpadUp = true;
 						break;
-					case 'a':
+					case KeyEvent.VK_A:
 						controller.dpadLeft = true;
 						break;
-					case 's':
+					case KeyEvent.VK_S:
 						controller.dpadDown = true;
 						break;
-					case 'd':
+					case KeyEvent.VK_D:
 						controller.dpadRight = true;
 						break;
-					case 'o':
+					case KeyEvent.VK_SPACE:
 						controller.buttonA = true;
 						break;
-					case 'p':
+					case KeyEvent.VK_SHIFT:
 						controller.buttonB = true;
 						break;
-					case ',':
+					case KeyEvent.VK_MINUS:
 						controller.buttonSelect = true;
 						break;
-					case '.':
+					case KeyEvent.VK_ENTER:
 						controller.buttonStart = true;
 						break;
-
-
 				}
 			}
 
 			@Override
 			public void keyReleased(KeyEvent e) {
 				StandardController controller = (StandardController) nes.controllerPorts.player1;
-				switch(e.getKeyChar()) {
-					case 'w':
+				switch(e.getKeyCode()) {
+					case KeyEvent.VK_W:
 						controller.dpadUp = false;
 						break;
-					case 'a':
+					case KeyEvent.VK_A:
 						controller.dpadLeft = false;
 						break;
-					case 's':
+					case KeyEvent.VK_S:
 						controller.dpadDown = false;
 						break;
-					case 'd':
+					case KeyEvent.VK_D:
 						controller.dpadRight = false;
 						break;
-					case 'o':
+					case KeyEvent.VK_SPACE:
 						controller.buttonA = false;
 						break;
-					case 'p':
+					case KeyEvent.VK_SHIFT:
 						controller.buttonB = false;
 						break;
-					case ',':
+					case KeyEvent.VK_MINUS:
 						controller.buttonSelect = false;
 						break;
-					case '.':
+					case KeyEvent.VK_ENTER:
 						controller.buttonStart = false;
 						break;
 				}
+				//System.out.println(KeyEvent.getKeyText(e.getKeyCode()));
 
 			}
 		});
 
+
+
+
+
+
+
+		setupMenus();
+		setupFrame();
+
+
+		this.nes = new Nes(this);
+	}
+
+	private void setupMenus() {
+		JMenuBar menuBar = new JMenuBar();
+
+		JMenu fileMenu = new JMenu("File");
+		JMenuItem openRomItem = new JMenuItem("Load ROM");
+		fileMenu.add(openRomItem);
+		JMenuItem exitRom = new JMenuItem("Exit ROM");
+		fileMenu.add(exitRom);
+
+		menuBar.add(fileMenu);
+
+		JMenu emuMenu = new JMenu("Emulation");
+		JMenuItem pauseItem = new JMenuItem("Pause");
+		emuMenu.add(pauseItem);
+		JMenuItem speedItem = new JMenuItem("Set maximum speed...");
+		emuMenu.add(speedItem);
+
+
+		emuMenu.add(pauseItem);
+
+
+		menuBar.add(emuMenu);
+
+		setJMenuBar(menuBar);
+
+	}
+	private void setupFrame() {
+
+
+		//Theres 9129012 different ways of doing this but this worky
+		setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/Nes_controller_square.png")));
+
+		GraphicsDevice gd = getGraphicsConfiguration().getDevice();
+		double height = gd.getDisplayMode().getHeight() / 1.5;
+
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
-		setMinimumSize(new Dimension(500, 400));
-		setSize(screenSize);
+		setMinimumSize(new Dimension(500, 469));
+		setSize((int) Math.round((height) / 0.9375), (int) Math.round(height));
 		setLocationRelativeTo(null);
 		setVisible(true);
 
-		this.nes = new Nes(this);
 	}
 
 	public void recock() {
@@ -184,7 +215,14 @@ public class GUI extends JFrame {
 	}
 
 	public static void main(String[] args) throws InterruptedException, LineUnavailableException {
+		try {
+			UIManager.setLookAndFeel(new FlatLightLaf());
 
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+
+		//JFrame.setDefaultLookAndFeelDecorated(true);
 		/*
 		AudioFormat format = new AudioFormat(
 				500,
