@@ -35,6 +35,8 @@ public class Clock {
 
 	private long tickSpeed;
 
+	public volatile boolean doTicks;
+
 	ArrayList<Listener> listeners;
 
 
@@ -60,6 +62,7 @@ public class Clock {
 
 
 	public void tick() {
+
 		for(Listener listener : listeners) {
 			if(listener.step <= 0) {
 				listener.step = listener.divisor;
@@ -67,6 +70,7 @@ public class Clock {
 			}
 			listener.step--;
 		}
+
 
 		cycles++;
 	}
@@ -79,8 +83,10 @@ public class Clock {
 
 			for(Listener listener : listeners) {
 				if(listener.step <= 0) {
-					listener.step = listener.divisor;
-					listener.tick();
+					if(doTicks) {
+						listener.step = listener.divisor;
+						listener.tick();
+					}
 				}
 				listener.step--;
 			}
@@ -93,5 +99,10 @@ public class Clock {
 
 	public void stop() {
 		active = false;
+	}
+
+	public void reset() {
+		active = false;
+		cycles = 0;
 	}
 }

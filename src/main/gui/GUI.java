@@ -14,11 +14,16 @@ import javax.sound.sampled.SourceDataLine;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import java.awt.*;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.dnd.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.util.ArrayList;
 import java.util.Random;
 
-public class GUI extends JFrame {
+public class GUI extends JFrame implements DropTargetListener {
 
 
 	Color palette[] = Palette.defaultPalette().colors;
@@ -169,6 +174,8 @@ public class GUI extends JFrame {
 	private void setupFrame() {
 
 
+		new DropTarget(this, this);
+
 		//Theres 9129012 different ways of doing this but this worky
 		setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/Nes_controller_square.png")));
 
@@ -180,6 +187,8 @@ public class GUI extends JFrame {
 		setSize((int) Math.round((height) / 0.9375), (int) Math.round(height));
 		setLocationRelativeTo(null);
 		setVisible(true);
+
+
 
 	}
 
@@ -254,6 +263,8 @@ public class GUI extends JFrame {
 		gui.nes.start();
 
 
+
+
 		/*
 		Random r = new Random();
 		while(true) {
@@ -268,4 +279,51 @@ public class GUI extends JFrame {
 	}
 
 
+	@Override
+	public void dragEnter(DropTargetDragEvent dtde) {
+
+	}
+
+	@Override
+	public void dragOver(DropTargetDragEvent dtde) {
+
+	}
+
+	@Override
+	public void dropActionChanged(DropTargetDragEvent dtde) {
+
+	}
+
+	@Override
+	public void dragExit(DropTargetEvent dte) {
+
+	}
+
+	@Override
+	public void drop(DropTargetDropEvent event) {
+		// Accept copy drops
+		event.acceptDrop(DnDConstants.ACTION_LINK);
+
+		// Get the transfer which can provide the dropped item data
+		Transferable transferable = event.getTransferable();
+
+		try {
+			// If the drop items are files
+			if (event.getCurrentDataFlavors()[0].isFlavorJavaFileListType()) {
+				// Get all of the dropped files
+				java.util.List<File> files = (java.util.List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
+				// Loop them through
+				for (File file : files) {
+					nes.insertCartridge(file.getPath());
+				}
+
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		// Inform that the drop is complete
+		event.dropComplete(true);
+	}
 }

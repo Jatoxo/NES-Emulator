@@ -5,6 +5,8 @@ import main.input.Controller;
 import main.input.ControllerPorts;
 import main.input.StandardController;
 
+import static java.lang.Thread.sleep;
+
 
 public class Nes {
 	public Cartridge cartridge;
@@ -33,8 +35,7 @@ public class Nes {
 		cpu = new Jtx6502(this);
 		ppu = new PPU(this);
 
-		//insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
-		insertCartridge("D:\\GamesSoftware\\ZZ Emulators\\NES\\Games\\Donkey Kong.nes");
+
 
 		controllerPorts = new ControllerPorts();
 		cpu.bus.addBusDevice(controllerPorts);
@@ -46,6 +47,8 @@ public class Nes {
 		clock.addListener(cpu, 12);
 		clock.addListener(ppu, 4); //ppu go brrrrrr
 
+		//insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
+		insertCartridge("D:\\GamesSoftware\\ZZ Emulators\\NES\\Games\\Donkey Kong.nes");
 
 	}
 
@@ -57,14 +60,20 @@ public class Nes {
 		insertCartridge(new Cartridge(filePath));
 	}
 	public void insertCartridge(Cartridge cart) {
+		clock.doTicks = false;
+
 		cpu.bus.removeBusDevice(cartridge);
 		cartridge = cart;
 		cpu.bus.addBusDevice(cart);
+
 
 		ppu.connectCartridge(cartridge);
 
 		cpu.reset();
 		ppu.reset();
+
+
+		clock.doTicks = true;
 	}
 
 	public void connectController(Controller controller, int port) {
