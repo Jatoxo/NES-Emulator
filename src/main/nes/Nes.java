@@ -9,6 +9,8 @@ import static java.lang.Thread.sleep;
 
 
 public class Nes {
+	public boolean paused = false;
+
 	public Cartridge cartridge;
 
 	public Jtx6502 cpu;
@@ -53,7 +55,21 @@ public class Nes {
 	}
 
 	public void start() {
-		clock.start();
+		while(!paused) {
+			long lastTime = System.nanoTime();
+
+			advanceFrame();
+
+			//Todo this isnt accurate at all
+			while(System.nanoTime() - lastTime < 16666666);
+		}
+	}
+
+	public void advanceFrame() {
+		while(!ppu.frameComplete) {
+			clock.tick();
+		}
+		ppu.frameComplete = false;
 	}
 
 	public void insertCartridge(String filePath) {
@@ -61,6 +77,12 @@ public class Nes {
 	}
 	public void insertCartridge(Cartridge cart) {
 		clock.doTicks = false;
+
+		try {
+			sleep(50);
+		} catch(InterruptedException e) {
+			e.printStackTrace();
+		}
 
 		cpu.bus.removeBusDevice(cartridge);
 		cartridge = cart;
@@ -72,6 +94,11 @@ public class Nes {
 		cpu.reset();
 		ppu.reset();
 
+		try {
+			sleep(50);
+		} catch(InterruptedException e) {
+			e.printStackTrace();
+		}
 
 		clock.doTicks = true;
 	}

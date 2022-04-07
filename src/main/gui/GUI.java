@@ -260,6 +260,8 @@ public class GUI extends JFrame implements DropTargetListener {
 		 */
 
 		GUI gui = new GUI();
+
+
 		gui.nes.start();
 
 
@@ -280,18 +282,18 @@ public class GUI extends JFrame implements DropTargetListener {
 
 
 	@Override
-	public void dragEnter(DropTargetDragEvent dtde) {
-
+	public void dragEnter(DropTargetDragEvent event) {
+		//event.acceptDrag(DnDConstants.ACTION_LINK);
 	}
 
 	@Override
-	public void dragOver(DropTargetDragEvent dtde) {
-
+	public void dragOver(DropTargetDragEvent event) {
+		event.acceptDrag(DnDConstants.ACTION_LINK);
 	}
 
 	@Override
-	public void dropActionChanged(DropTargetDragEvent dtde) {
-
+	public void dropActionChanged(DropTargetDragEvent event) {
+		//event.acceptDrag(DnDConstants.ACTION_LINK);
 	}
 
 	@Override

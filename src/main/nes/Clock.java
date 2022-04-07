@@ -65,8 +65,11 @@ public class Clock {
 
 		for(Listener listener : listeners) {
 			if(listener.step <= 0) {
-				listener.step = listener.divisor;
-				listener.tick();
+				if(doTicks) {
+					listener.step = listener.divisor;
+					listener.tick();
+
+				}
 			}
 			listener.step--;
 		}
@@ -79,19 +82,7 @@ public class Clock {
 		active = true;
 
 		while(active) {
-
-
-			for(Listener listener : listeners) {
-				if(listener.step <= 0) {
-					if(doTicks) {
-						listener.step = listener.divisor;
-						listener.tick();
-					}
-				}
-				listener.step--;
-			}
-
-
+			tick();
 			cycles++;
 		}
 
