@@ -211,6 +211,7 @@ public class GUI extends JFrame {
 
 	public void renderScreen(BufferedImage screen) {
 		img = screen;
+		System.out.println(screen);
 		repaint();
 	}
 

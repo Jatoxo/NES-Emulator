@@ -34,7 +34,7 @@ public class Nes {
 		ppu = new PPU(this);
 
 		//insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
-		insertCartridge("D:\\GamesSoftware\\ZZ Emulators\\NES\\Games\\Donkey Kong.nes");
+		insertCartridge("C:\\Users\\Jojojihn\\Documents\\GitHub\\NES-Emulator\\src\\main\\util\\Pac-Man (USA) (Namco).nes");
 
 		controllerPorts = new ControllerPorts();
 		cpu.bus.addBusDevice(controllerPorts);
