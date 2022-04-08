@@ -489,20 +489,49 @@ public class PPU extends BusDevice implements Tickable {
 		int address = vAddr.get() & 0x0FFF;
 		//System.out.println(address & 0x1f);
 
-		int chrIndex = ppuRead(0x2000| address);
+		int chrIndex;
 
-		byte[] bitplane0 = getPatternEntry(ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 0);
-		byte[] bitplane1 = getPatternEntry(ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 1);
+		byte[] bitplane0;
+		byte[] bitplane1;
 
 
-		int rowBits0 = bitplane0[fineY] << 8;
-		int rowBits1 = bitplane1[fineY] << 8;
+		int rowBits0 ;
+		int rowBits1;
 
-		int colorShift0 = 0;
-		int colorShift1 = 0;
+		int colorShift0;
+		int colorShift1;
 
 
 		for(int y = 0; y < SCREEN_HEIGHT; y++) {
+			chrIndex = ppuRead(0x2000| address);
+			bitplane0 = getPatternEntry(ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 0);
+			bitplane1 = getPatternEntry(ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 1);
+
+
+			rowBits0 = bitplane0[fineY] << 8;
+			rowBits1 = bitplane1[fineY] << 8;
+
+			colorShift0 = 0;
+			colorShift1 = 0;
+
+			int attributeAddr = 0x23C0 | (address & 0xC00) | ((address >> 4) & 0x38) | ((address >> 2) & 0x07);
+			int attrByte = ppuRead(attributeAddr);
+
+			int byteX = (address & 0x1F) & 0x2;
+			int byteY = ((address >> 5) & 0x1F) & 0x2;
+
+			int shift = byteX | (byteY << 1);
+
+			int paletteSelect = (attrByte >> shift) & 0x3;
+
+			//fill the color reg with the correct attribute values
+			for(int i = 0; i < 8; i++) {
+				int val = paletteSelect & 1;
+				colorShift0 |= (val) << (1 + i);
+				val = (paletteSelect & 2) >> 1;
+				colorShift1 |= (val) << (1 + i);
+			}
+
 			for(int x = 0; x < SCREEN_WIDTH; x++) {
 				int pixel = y << 8 | x;
 
@@ -541,15 +570,15 @@ public class PPU extends BusDevice implements Tickable {
 					// || ++++---------- attribute offset (960 bytes)
 					// ++--------------- nametable select
 
-					int attributeAddr = 0x23C0 | (address & 0xC00) | ((address >> 4) & 0x38) | ((address >> 2) & 0x07);
-					int attrByte = ppuRead(attributeAddr);
+					attributeAddr = 0x23C0 | (address & 0xC00) | ((address >> 4) & 0x38) | ((address >> 2) & 0x07);
+					attrByte = ppuRead(attributeAddr);
 
-					int byteX = (address & 0x1F) & 0x2;
-					int byteY = ((address >> 5) & 0x1F) & 0x2;
+					byteX = (address & 0x1F) & 0x2;
+					byteY = ((address >> 5) & 0x1F) & 0x2;
 
-					int shift = byteX | (byteY << 1);
+					shift = byteX | (byteY << 1);
 
-					int paletteSelect = (attrByte >> shift) & 0x3;
+					paletteSelect = (attrByte >> shift) & 0x3;
 
 					colorShift0 &= ~0x1;
 					colorShift1 &= ~0x1;
@@ -566,7 +595,7 @@ public class PPU extends BusDevice implements Tickable {
 				//Save them to the buffer (background uses palette half 0)
 
 
-				int paletteSelect = (((colorShift0 >>> 1) >>> (7 - fineX)) & 0x1) | ((((colorShift1 >>> 1) >>> (7 - fineX)) & 0x1)  << 1);
+				paletteSelect = (((colorShift0 >>> 1) >>> (7 - fineX)) & 0x1) | ((((colorShift1 >>> 1) >>> (7 - fineX)) & 0x1)  << 1);
 
 				outputBuffer[pixel] = (byte) ((paletteSelect << 2) | (bit1 << 1) | (bit0));
 
@@ -613,6 +642,7 @@ public class PPU extends BusDevice implements Tickable {
 			address &= ~0x41F;
 			//copy the bits
 			address |= (vAddr.get() & 0x41F);
+
 		}
 
 	}
