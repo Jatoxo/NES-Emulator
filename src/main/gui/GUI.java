@@ -220,6 +220,7 @@ public class GUI extends JFrame implements DropTargetListener {
 
 	public void renderScreen(BufferedImage screen) {
 		img = screen;
+		System.out.println(screen);
 		repaint();
 	}
 
