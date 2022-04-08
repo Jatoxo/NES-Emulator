@@ -123,7 +123,9 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 					mapper = new NROM(programRom, pgrRomChunks, chrRom, mirrorMode());
 					break;
 				default:
+
 					System.out.println("Unknown Mapper");
+					throw new RuntimeException("Unknown Mapper");
 			}
 
 

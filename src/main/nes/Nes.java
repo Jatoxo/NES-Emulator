@@ -5,8 +5,12 @@ import main.input.Controller;
 import main.input.ControllerPorts;
 import main.input.StandardController;
 
+import static java.lang.Thread.sleep;
+
 
 public class Nes {
+	public boolean paused = false;
+
 	public Cartridge cartridge;
 
 	public Jtx6502 cpu;
@@ -33,8 +37,7 @@ public class Nes {
 		cpu = new Jtx6502(this);
 		ppu = new PPU(this);
 
-		//insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
-		insertCartridge("C:\\Users\\Jojojihn\\Documents\\GitHub\\NES-Emulator\\src\\main\\util\\Pac-Man (USA) (Namco).nes");
+
 
 		controllerPorts = new ControllerPorts();
 		cpu.bus.addBusDevice(controllerPorts);
@@ -46,25 +49,58 @@ public class Nes {
 		clock.addListener(cpu, 12);
 		clock.addListener(ppu, 4); //ppu go brrrrrr
 
+		//insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
+		insertCartridge("D:\\GamesSoftware\\ZZ Emulators\\NES\\Games\\Donkey Kong.nes");
 
 	}
 
 	public void start() {
-		clock.start();
+		while(!paused) {
+			long lastTime = System.nanoTime();
+
+			advanceFrame();
+
+			//Todo this isnt accurate at all
+			while(System.nanoTime() - lastTime < 16666666);
+		}
+	}
+
+	public void advanceFrame() {
+		while(!ppu.frameComplete) {
+			clock.tick();
+		}
+		ppu.frameComplete = false;
 	}
 
 	public void insertCartridge(String filePath) {
 		insertCartridge(new Cartridge(filePath));
 	}
 	public void insertCartridge(Cartridge cart) {
+		clock.doTicks = false;
+
+		try {
+			sleep(50);
+		} catch(InterruptedException e) {
+			e.printStackTrace();
+		}
+
 		cpu.bus.removeBusDevice(cartridge);
 		cartridge = cart;
 		cpu.bus.addBusDevice(cart);
+
 
 		ppu.connectCartridge(cartridge);
 
 		cpu.reset();
 		ppu.reset();
+
+		try {
+			sleep(50);
+		} catch(InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		clock.doTicks = true;
 	}
 
 	public void connectController(Controller controller, int port) {

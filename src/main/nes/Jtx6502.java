@@ -70,6 +70,9 @@ public class Jtx6502 implements Tickable {
 	int index = 0;
 	 */
 
+	private boolean raiseNMI = false;
+
+
 	public Jtx6502(Nes nes) {
 		this.nes = nes;
 		this.bus = new Bus();
@@ -102,6 +105,10 @@ public class Jtx6502 implements Tickable {
 
 	}
 
+	public void raiseNMI() {
+		raiseNMI = true;
+	}
+
 	public void logCpuState() {
 		System.out.print(String.format("%x", currentInstruction.address).toUpperCase());
 		System.out.print(String.format(" %x", currentInstruction.opcode).toUpperCase()); //First instruction byte (opcode)
@@ -122,8 +129,12 @@ public class Jtx6502 implements Tickable {
 	public void clockCycle() {
 
 
+		if(cycles == 0 && raiseNMI) {
+			raiseNMI = false;
+			nmi();
+		} else if(cycles == 0) {
 
-		if(cycles == 0) {
+
 			opcode = read(pc.get());
 
 			currentInstruction = Instruction.fromOpCode((byte) opcode);

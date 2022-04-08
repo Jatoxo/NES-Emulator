@@ -1,10 +1,8 @@
 package main.nes;
 
 
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
-import java.util.Random;
 
 public class PPU extends BusDevice implements Tickable {
 	public static final int SCREEN_WIDTH = 256;
@@ -24,9 +22,15 @@ public class PPU extends BusDevice implements Tickable {
 	Nes nes;
 
 	BufferedImage output;
+
+	//Output buffer, one byte corresponds to one pixel and represents an address into palette ram
+	byte[] outputBuffer = new byte[SCREEN_WIDTH * SCREEN_HEIGHT];
+
 	Palette palette;
 
 	long totalCycles = 0;
+
+	boolean frameComplete = false;
 
 	//Inclusive
 	public static final int PALLETE_RAM_INDEX_START = 0x3F00;
@@ -43,7 +47,6 @@ public class PPU extends BusDevice implements Tickable {
 
 	long time = 0;
 
-	//TODO: Implement internal data latch
 
 	public static final int PPUCTRL = 0x2000;
 	FlagRegister ppuCtrl = new FlagRegister(0x00, Register.BitSize.BITS_8, "PPU Control", "PPUCTRL");
@@ -104,25 +107,30 @@ public class PPU extends BusDevice implements Tickable {
 	//           line); cleared after reading $2002 and at dot 1 of the
 	//           pre-render line.
 
+
 	public static final int OAMADDR = 0x2003;
 	FlagRegister oamAddr = new FlagRegister(0x00, Register.BitSize.BITS_8, "OAM Address", "OAMADDR", 0x2003);
 
 	public static final int OAMDATA = 0x2004;
-	FlagRegister oamData = new FlagRegister(0x00, Register.BitSize.BITS_8, "OAM Data", "OAMDATA", 0x2004);
 
 	public static final int PPUSCROLL = 0x2005;
-	FlagRegister ppuScroll = new FlagRegister(0x00, Register.BitSize.BITS_8, "PPU Scroll", "PPUSCROLL", 0x2005);
+	Register ppuScroll = new Register(0x00, Register.BitSize.BITS_8, "PPU Scroll", "PPUSCROLL", 0x2005);
 
 	public static final int PPUADDR = 0x2006;
-	FlagRegister ppuAddr = new FlagRegister(0x00, Register.BitSize.BITS_16, "PPU Address", "PPUADDR", 0x2006);
+
+	//These are the "actual" registers v and t (https://www.nesdev.org/wiki/PPU_scrolling)
+	Register vAddr = new Register(0x00, Register.BitSize.BITS_16, "vAddr", "vAddr");
+	Register tAddr = new Register(0x00, Register.BitSize.BITS_16, "tAddr", "tAddr");
+
+	int fineX = 0;
 
 	public static final int PPUDATA = 0x2007;
-	FlagRegister ppuData = new FlagRegister(0x00, Register.BitSize.BITS_8, "PPU Data", "PPUDATA", 0x2007);
+
 
 
 	private int readBuffer = 0; //https://www.nesdev.org/wiki/PPU_registers#:~:text=avoid%20wrong%20scrolling.-,The%20PPUDATA%20read%20buffer%20(post%2Dfetch),-When%20reading%20while
 
-	private int addressLatch = 0;
+	private int writeToggle = 0;
 
 	private int scanline = -1;
 	private int scanlineCycle = 0;
@@ -235,11 +243,58 @@ public class PPU extends BusDevice implements Tickable {
 			oamAddr.set(0x00);
 		}
 
+		if(scanlineCycle == 304) {
+
+			if(ppuMask.isSet("b") || ppuMask.isSet("s")) {
+				//Copy vertical scrolling related bits from t to v
+				//v: GHIA.BC DEF..... <- t: GHIA.BC DEF.....
+
+
+
+
+				int val = vAddr.get();
+				//Clear all the vertical scrolling related bits
+				val &= ~0x7BE0;
+				//Copy the bits from t
+				val |= (tAddr.get() & 0x7BE0);
+				vAddr.set(val);
+
+
+
+
+				//TODO: Copying over horizontal scrolling bits, which should be done at the end of every scanline. Do it here for now.
+				//Doing this here means that if t is updated while rendering, the change will not take effect.
+				//We can technically handle the change to t later when rendering the nametable I think
+
+				//v: ....A.. ...BCDEF <- t: ....A.. ...BCDEF
+
+				//clear the horizontal scrolling bits
+				val &= ~0x41F;
+				//copy the bits from t
+				val |= (tAddr.get() & 0x41F);
+				vAddr.set(val);
+			}
+
+		}
+
 	}
 
 	//Called for every cycle on the visible scanline
 	//Scanline 0 - 239
 	private void visibleScanlineCycle(int scanline, int scanlineCycle) {
+		//TODO: hack: this is reloading at the end of every scanline so with the current method only the last change will take effect
+		if(scanlineCycle == 304) {
+			if(ppuMask.isSet("b") || ppuMask.isSet("s")) {
+				int val = vAddr.get();
+
+				val &= ~0x41F;
+				//copy the bits from t
+				val |= (tAddr.get() & 0x41F);
+				vAddr.set(val);
+			}
+
+		}
+
 		if(scanline == 30 && scanlineCycle == 64) {
 			//TODO: This is faking a sprite 0 hit for SMB
 			ppuStatus.setFlag("S", true);
@@ -252,9 +307,17 @@ public class PPU extends BusDevice implements Tickable {
 			oamAddr.set(0x00);
 
 		} else if(scanline == 239 && scanlineCycle == 340) {
-			renderBackground();
+			if(ppuMask.isSet("b")) {
+				renderBackground2();
+			} else {
+				outputBuffer = new byte[SCREEN_WIDTH * SCREEN_HEIGHT];
+			}
+			renderBuffer();
 			renderSprites();
+
 			nes.gui.renderScreen(output);
+
+			frameComplete = true;
 			//clear output to distinguish sprites
 			//output = new BufferedImage(SCREEN_WIDTH, SCREEN_HEIGHT, BufferedImage.TYPE_INT_RGB);
 		}
@@ -263,6 +326,7 @@ public class PPU extends BusDevice implements Tickable {
 	//Called for every vblank scanline cycle
 	//Scanline 241 - 260
 	private void vBlankScanlineCycle(int scanline, int scanlineCycle) {
+
 		if(scanline == 241 && scanlineCycle == 1) {
 			//set vblank flag
 			int val = ppuStatus.get();
@@ -271,11 +335,12 @@ public class PPU extends BusDevice implements Tickable {
 			ppuStatus.set(val);
 
 			if(ppuCtrl.isSet("V")) {
-				//Todo: This shouldn't be allowed to stop the cpu during executing an instruction, it should wait until it is finished
+				//Fixed: This shouldn't be allowed to stop the cpu during executing an instruction, it should wait until it is finished
 				//Due to the current implementation, this might work fine. Instruction are executed whole and the the cpu idle cycles until the correct amount
 				//of cycles for each instruction has passed. The only side effect of doing it this way is that the nmi may be called earlier than intended during the cpu's
 				//idle cycles
-				nes.cpu.nmi();
+				nes.cpu.raiseNMI();
+				//nes.cpu.nmi();
 			}
 
 		}
@@ -342,7 +407,7 @@ public class PPU extends BusDevice implements Tickable {
 		//Sprite rendering depends on the following things:
 		//-Sprites at lower indexes in secondaryOAM are layered above others
 		//-If Flag M in PPUMASK is not set, sprites don't render in the 8 leftmost Screen pixels
-		//-If Flag s in PPUMASK is not set, sprides don't render at all
+		//-If Flag s in PPUMASK is not set, sprites don't render at all
 		//-The priority of a sprite (byte two in OAM entry, Bit 5): 0 - In front of BG, 1 - Behind BG
 		//      Sprites behind BG should still be rendered if the BG is transparent
 		//-The sprite flipping (byte two in OAM entry, Bit 6-7)
@@ -366,15 +431,15 @@ public class PPU extends BusDevice implements Tickable {
 			byte paletteSelect = (byte) (attr & 0x3);
 
 			boolean flipH = (attr & 0x40) > 0;
-			boolean flipV = (attr & 0x40) > 0; //Also swaps tiles in 8x16 mode
+			boolean flipV = (attr & 0x80) > 0; //Also swaps tiles in 8x16 mode
 
-			byte[] bitPlane0 = getPatternEntry(ppuCtrl.isSet("S") ? 1 : 0, chrInd, 0);
+ 			byte[] bitPlane0 = getPatternEntry(ppuCtrl.isSet("S") ? 1 : 0, chrInd, 0);
 			byte[] bitPlane1 = getPatternEntry(ppuCtrl.isSet("S") ? 1 : 0, chrInd, 1);
 
 			for(int spriteY = 0; spriteY < 8; spriteY++) {
 				for(int spriteX = 0; spriteX < 8; spriteX++) {
-					byte row0 = bitPlane0[spriteY];
-					byte row1 = bitPlane1[spriteY];
+					byte row0 = bitPlane0[flipV ? 7 - spriteY : spriteY];
+					byte row1 = bitPlane1[flipV ? 7 - spriteY : spriteY];
 
 					int val0 = (row0 >> (7-spriteX)) & 0x1;
 					int val1 = (row1 >> (7-spriteX)) & 0x1;
@@ -401,12 +466,196 @@ public class PPU extends BusDevice implements Tickable {
 		}
 	}
 
-	private void renderBackground() {
+	private void renderBuffer() {
+		for(int i = 0; i < outputBuffer.length; i++) {
+			int paletteIndex = outputBuffer[i];
 
+			paletteIndex = ((paletteIndex & 0x3) == 0) ? 0 : paletteIndex;
+			int colorByte = palleteRam[paletteIndex];
+			int rgbOut = palette.colors[colorByte].getRGB();
+
+			int x = i & 0xFF;
+			int y = (i & 0xFF00) >>> 8;
+
+			output.setRGB(x, y, rgbOut);
+		}
+	}
+
+	private void renderBackground2() { //electric boogaloo
+		//Background rendering depends on the following things:
+		//-If flag m in PPUMASK is not set, background doesn't render in the 8 leftmost Screen pixels
+		//-If flag b in PPUMASK is not set, background doesn't render at all
+		//-The B flag in PPUCTRL controls wich side of the pattern memory to use
+		//-The current base name table selected through PPUCTRL
+		//-The scroll position supplied through PPUSCROLL
+
+
+		int fineY = (vAddr.get() >> 12) & 0x7;
+		int address = vAddr.get() & 0x0FFF;
+		//System.out.println(address & 0x1f);
+
+		int chrIndex;
+
+		byte[] bitplane0;
+		byte[] bitplane1;
+
+
+		int rowBits0 ;
+		int rowBits1;
+
+		int colorShift0;
+		int colorShift1;
+
+
+		for(int y = 0; y < SCREEN_HEIGHT; y++) {
+			chrIndex = ppuRead(0x2000| address);
+			bitplane0 = getPatternEntry(ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 0);
+			bitplane1 = getPatternEntry(ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 1);
+
+
+			rowBits0 = bitplane0[fineY] << 8;
+			rowBits1 = bitplane1[fineY] << 8;
+
+			colorShift0 = 0;
+			colorShift1 = 0;
+
+			int attributeAddr = 0x23C0 | (address & 0xC00) | ((address >> 4) & 0x38) | ((address >> 2) & 0x07);
+			int attrByte = ppuRead(attributeAddr);
+
+			int byteX = (address & 0x1F) & 0x2;
+			int byteY = ((address >> 5) & 0x1F) & 0x2;
+
+			int shift = byteX | (byteY << 1);
+
+			int paletteSelect = (attrByte >> shift) & 0x3;
+
+			//fill the color reg with the correct attribute values
+			for(int i = 0; i < 8; i++) {
+				int val = paletteSelect & 1;
+				colorShift0 |= (val) << (1 + i);
+				val = (paletteSelect & 2) >> 1;
+				colorShift1 |= (val) << (1 + i);
+			}
+
+			for(int x = 0; x < SCREEN_WIDTH; x++) {
+				int pixel = y << 8 | x;
+
+				//When the "buffer" register is empty, increment the address and load the next tile into it
+				if(pixel % 8 == 0) {
+					//increment the address and load next tile into the registers
+					//increments overflow into the nametable x
+					if((address & 0x001F) == 31) {// if coarse X == 31
+						address &= ~0x001F;          // coarse X = 0
+						address ^= 0x400;           // switch horizontal nametable
+					} else {
+						address += 1; // increment coarse X
+					}
+
+					chrIndex = ppuRead(0x2000 | address);
+					bitplane0 = getPatternEntry(ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 0);
+					bitplane1 = getPatternEntry(ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 1);
+
+
+
+					//The lower part should have been cleared either way from being shifted but just to make sure
+					rowBits0 &= ~0xFF;
+					rowBits0 &= ~0xFF;
+
+
+					rowBits0 |= bitplane0[fineY] & 0xFF;
+					rowBits1 |= bitplane1[fineY] & 0xFF;
+
+
+					//The upper 3 bits of coarse X (coarse x is the lower 5 bits of the nametable address)
+					//are the x entry into the attribute table
+
+					// NN 1111 YYY XXX
+					// || |||| ||| +++-- high 3 bits of coarse X (x/4)
+					// || |||| +++------ high 3 bits of coarse Y (y/4)
+					// || ++++---------- attribute offset (960 bytes)
+					// ++--------------- nametable select
+
+					attributeAddr = 0x23C0 | (address & 0xC00) | ((address >> 4) & 0x38) | ((address >> 2) & 0x07);
+					attrByte = ppuRead(attributeAddr);
+
+					byteX = (address & 0x1F) & 0x2;
+					byteY = ((address >> 5) & 0x1F) & 0x2;
+
+					shift = byteX | (byteY << 1);
+
+					paletteSelect = (attrByte >> shift) & 0x3;
+
+					colorShift0 &= ~0x1;
+					colorShift1 &= ~0x1;
+
+					colorShift0 |= paletteSelect & 1;
+					colorShift1 |= (paletteSelect & 2) >> 1;
+
+				}
+
+				//Select the bits that will be rendered at this pixel
+				int bit0 = ((rowBits0 >>> 8) >>> (7 - fineX)) & 1;
+				int bit1 = ((rowBits1 >>> 8) >>> (7 - fineX)) & 1;
+
+				//Save them to the buffer (background uses palette half 0)
+
+
+				paletteSelect = (((colorShift0 >>> 1) >>> (7 - fineX)) & 0x1) | ((((colorShift1 >>> 1) >>> (7 - fineX)) & 0x1)  << 1);
+
+				outputBuffer[pixel] = (byte) ((paletteSelect << 2) | (bit1 << 1) | (bit0));
+
+				//Shift over the registers to the next pixel
+				rowBits0 = rowBits0 << 1;
+				rowBits1 = rowBits1 << 1;
+
+				rowBits0 &= 0xFFFF;
+				rowBits1 &= 0xFFFF;
+
+
+				colorShift0 = (colorShift0 << 1) | (colorShift0 & 0x1);
+				colorShift1 = (colorShift1 << 1) | (colorShift1 & 0x1);
+
+				colorShift0 &= 0x1FF;
+				colorShift1 &= 0x1FF;
+
+
+
+			}
+			//Finished with one scanline, now increment y of address, correctly wrapping to the next nametable
+			if(fineY < 7) {  // if fine Y < 7
+				fineY++;
+			} else {
+				fineY = 0;             // fine Y = 0
+				int cY = (address & 0x3E0) >> 5;// let y = coarse Y
+				switch(cY) {
+					case 29:
+						address ^= 0x800;          // switch vertical nametable
+					case 31:
+						cY = 0;                    // coarse Y = 0
+						break;
+					default:
+						cY += 1;                     // increment coarse Y
+				}
+				address = (address & ~0x3E0) | (cY << 5);// put coarse Y back into v
+			}
+
+			//At the end of a scanline, horizontal related bits are reloaded from t into v.
+			//We never changed v, so I can reload address variable from v instead, which was set to t once
+
+			//clear the horizontal scrolling bits
+			address &= ~0x41F;
+			//copy the bits
+			address |= (vAddr.get() & 0x41F);
+
+		}
+
+	}
+
+	private void renderBackground() {
 		//Go through nametable
 		for(int nameT = 0; nameT < 960; nameT++) {
 
-			int chrIndex = ppuRead((0x2000 | ((ppuCtrl.get() & 0x3))<<10) + nameT);
+			int chrIndex = ppuRead((0x2000 | (vAddr.get() & 0xC00)) + nameT);
 
 			int halfSelect = ppuCtrl.isSet("B") ? 0x1000 : 0;
 
@@ -430,7 +679,7 @@ public class PPU extends BusDevice implements Tickable {
 
 					int attrIndex = attrTX | (attrTY << 3);
 
-					int attrByte = ppuRead((0x2000 | ((ppuCtrl.get() & 0x3))<<10) | 0x3C0 | attrIndex);
+					int attrByte = ppuRead((0x2000 | (vAddr.get() & 0xC00)) | 0x3C0 | attrIndex);
 
 					int byteX = nameTX & 0x2;
 					int byteY = nameTY & 0x2;
@@ -469,9 +718,20 @@ public class PPU extends BusDevice implements Tickable {
 	}
 
 	public void reset() {
+		ppuCtrl.set(0);
+		ppuMask.set(0);
+		ppuStatus.set(0);
+		oamAddr.set(0);
+		ppuScroll.set(0);
+		vAddr.set(0);
+		tAddr.set(0);
 
-		//Todo: Do the whole PPU powerup state
+
+		//Todo: Proper startup and reset values
 		totalCycles = 0;
+		scanline = -1;
+		scanlineCycle = 0;
+		oddFrame = false;
 	}
 
 	//14-Bit address
@@ -517,7 +777,7 @@ public class PPU extends BusDevice implements Tickable {
 	@Override
 	public int read(int addr) {
 
-		//TODO: Implement PPU Registers & read buffer
+
 
 		//PPU Registers only take up 8 bytes, so mask only the first 3 bits for mirroring
 		addr &= 0x7;
@@ -526,7 +786,7 @@ public class PPU extends BusDevice implements Tickable {
 		int val;
 		switch(addr) {
 			case PPUSTATUS:
-				addressLatch = 0;
+				writeToggle = 0;
 				val = ppuStatus.get();
 				ppuStatus.value &= 0x7f; //Bit 7 is cleared
 
@@ -534,20 +794,20 @@ public class PPU extends BusDevice implements Tickable {
 
 			case PPUDATA:
 				//When reading from a location that isn't pallete RAM or it's mirrors, there is a buffer that gets returned and filled only afterwards
-				if(ppuAddr.get() < PALLETE_RAM_INDEX_START) {
+				if(vAddr.get() < PALLETE_RAM_INDEX_START) {
 					val = readBuffer;
 
-					readBuffer = ppuRead(ppuAddr.get());
+					readBuffer = ppuRead(vAddr.get());
 
 				} else {
-					val = ppuRead(ppuAddr.get());
+					val = ppuRead(vAddr.get());
 
 					//Internal read buffer "bypasses" the color index ram and reads from the underlying memory instead (probably CIRAM)
-					readBuffer = ppuBus.read(ppuAddr.get());
+					readBuffer = ppuBus.read(vAddr.get());
 				}
 
 				//Increment PPU address depending on PPUCTRL flag
-				ppuAddr.set(ppuAddr.get() + ((ppuCtrl.isSet("I")) ? 32 : 1));
+				vAddr.set(vAddr.get() + ((ppuCtrl.isSet("I")) ? 32 : 1));
 
 				return val;
 
@@ -567,16 +827,53 @@ public class PPU extends BusDevice implements Tickable {
 		addr &= 0x7;
 		addr += 0x2000;
 
+		data &= 0xFF;
+
 		int val;
 		switch(addr) {
 			case PPUCTRL:
-				ppuCtrl.set(data);
+				//Mask out the bits that are set in t register because why the fuck not
+				ppuCtrl.set(data & ~0x3);
+
+				//The lower two bits select the nametable, this gets saved in the t register
+				val = tAddr.get();
+				val &= ~0xC00;
+				val |= (data & 0x3) << 10;
+				tAddr.set(val);
+
+				break;
+
+			case PPUSCROLL:
+				if(writeToggle == 0) {
+
+					fineX = data & 0x7;
+
+					//Clear lower 5 bits and set them to the upper 5 bits of data
+					val = tAddr.get();
+					val &= ~0x1F;
+					val |= data >> 3;
+
+
+
+					tAddr.set(val);
+
+
+					writeToggle = 1;
+				} else {
+					val = tAddr.get();
+					//Clear all the bits relevant to vertical scroll (The highest 3 = fine Y, the other 5 coarse y)
+					val &= ~0b0111001111100000;
+					val |= (data >> 3) << 5;
+					val |= (data & 0x3) << 12;
+					tAddr.set(val);
+					writeToggle = 0;
+				}
 				break;
 
 			case PPUADDR:
-				val = ppuAddr.get();
+				val = tAddr.get();
 
-				if(addressLatch == 0) {
+				if(writeToggle == 0) {
 					//Mask high byte to the bottom 6 bits to limit max address to 0x3FFF
 					data &= 0x3F;
 
@@ -584,16 +881,20 @@ public class PPU extends BusDevice implements Tickable {
 					val &= ~0xFF00;
 					//set high byte
 					val |= (data & 0xFF) << 8;
-					addressLatch = 1;
+
+
+					writeToggle = 1;
 				} else {
 					//Reset low byte
 					val &= ~0x00FF;
 					//set low byte
 					val |= data & 0xFF;
-					addressLatch = 0;
+
+					vAddr.set(val);
+					writeToggle = 0;
 				}
 
-				ppuAddr.set(val);
+				tAddr.set(val);
 				break;
 
 			case PPUMASK:
@@ -601,8 +902,8 @@ public class PPU extends BusDevice implements Tickable {
 				break;
 
 			case PPUDATA:
-				ppuWrite(ppuAddr.get(), data);
-				ppuAddr.set(ppuAddr.get() + ((ppuCtrl.getFlag("I") > 0) ? 32 : 1));
+				ppuWrite(vAddr.get(), data);
+				vAddr.set(vAddr.get() + ((ppuCtrl.getFlag("I") > 0) ? 32 : 1));
 				break;
 
 			case OAMADDR:
