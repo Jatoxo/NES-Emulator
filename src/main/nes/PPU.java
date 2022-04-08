@@ -239,29 +239,31 @@ public class PPU extends BusDevice implements Tickable {
 		}
 
 		if(scanlineCycle == 304) {
-			//Copy vertical scrolling related bits from t to v
-			//v: GHIA.BC DEF..... <- t: GHIA.BC DEF.....
 
-			int val = vAddr.get();
-			//Clear all the vertical scrolling related bits
-			val &= ~0x7BE0;
-			//Copy the bits from t
-			val |= (tAddr.get() & 0x7BE0);
-			vAddr.set(val);
+			if(ppuMask.isSet("b") || ppuMask.isSet("s")) {
+				//Copy vertical scrolling related bits from t to v
+				//v: GHIA.BC DEF..... <- t: GHIA.BC DEF.....
+
+				int val = vAddr.get();
+				//Clear all the vertical scrolling related bits
+				val &= ~0x7BE0;
+				//Copy the bits from t
+				val |= (tAddr.get() & 0x7BE0);
+				vAddr.set(val);
 
 
-			//TODO: Copying over horizontal scrolling bits, which should be done at the end of every scanline. Do it here for now.
-			//Doing this here means that if t is updated while rendering, the change will not take effect.
-			//We can technically handle the change to t later when rendering the nametable I think
+				//TODO: Copying over horizontal scrolling bits, which should be done at the end of every scanline. Do it here for now.
+				//Doing this here means that if t is updated while rendering, the change will not take effect.
+				//We can technically handle the change to t later when rendering the nametable I think
 
-			//v: ....A.. ...BCDEF <- t: ....A.. ...BCDEF
+				//v: ....A.. ...BCDEF <- t: ....A.. ...BCDEF
 
-			//clear the horizontal scrolling bits
-			val &= ~0x41F;
-			//copy the bits from t
-			val |= (tAddr.get() & 0x41F);
-			vAddr.set(val);
-
+				//clear the horizontal scrolling bits
+				val &= ~0x41F;
+				//copy the bits from t
+				val |= (tAddr.get() & 0x41F);
+				vAddr.set(val);
+			}
 
 		}
 
