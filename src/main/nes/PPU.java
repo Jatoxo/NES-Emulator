@@ -306,7 +306,11 @@ public class PPU extends BusDevice implements Tickable {
 			oamAddr.set(0x00);
 
 		} else if(scanline == 239 && scanlineCycle == 340) {
-			renderBackground2();
+			if(ppuMask.isSet("b")) {
+				renderBackground2();
+			} else {
+				outputBuffer = new byte[SCREEN_WIDTH * SCREEN_HEIGHT];
+			}
 			renderBuffer();
 			renderSprites();
 
@@ -402,7 +406,7 @@ public class PPU extends BusDevice implements Tickable {
 		//Sprite rendering depends on the following things:
 		//-Sprites at lower indexes in secondaryOAM are layered above others
 		//-If Flag M in PPUMASK is not set, sprites don't render in the 8 leftmost Screen pixels
-		//-If Flag s in PPUMASK is not set, sprides don't render at all
+		//-If Flag s in PPUMASK is not set, sprites don't render at all
 		//-The priority of a sprite (byte two in OAM entry, Bit 5): 0 - In front of BG, 1 - Behind BG
 		//      Sprites behind BG should still be rendered if the BG is transparent
 		//-The sprite flipping (byte two in OAM entry, Bit 6-7)
@@ -612,7 +616,6 @@ public class PPU extends BusDevice implements Tickable {
 
 				colorShift0 &= 0x1FF;
 				colorShift1 &= 0x1FF;
-				//Todo: populate color shift register with first tile at start
 
 
 
