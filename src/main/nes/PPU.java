@@ -21,6 +21,10 @@ public class PPU extends BusDevice implements Tickable {
 	Nes nes;
 
 	BufferedImage output;
+
+	//Output buffer, one byte corresponds to one pixel and represents an address into palette ram
+	byte[] outputBuffer = new byte[SCREEN_WIDTH * SCREEN_HEIGHT];
+
 	Palette palette;
 
 	long totalCycles = 0;
@@ -244,12 +248,17 @@ public class PPU extends BusDevice implements Tickable {
 				//Copy vertical scrolling related bits from t to v
 				//v: GHIA.BC DEF..... <- t: GHIA.BC DEF.....
 
+
+
+
 				int val = vAddr.get();
 				//Clear all the vertical scrolling related bits
 				val &= ~0x7BE0;
 				//Copy the bits from t
 				val |= (tAddr.get() & 0x7BE0);
 				vAddr.set(val);
+
+
 
 
 				//TODO: Copying over horizontal scrolling bits, which should be done at the end of every scanline. Do it here for now.
@@ -272,6 +281,19 @@ public class PPU extends BusDevice implements Tickable {
 	//Called for every cycle on the visible scanline
 	//Scanline 0 - 239
 	private void visibleScanlineCycle(int scanline, int scanlineCycle) {
+		//TODO: hack: this is reloading at the end of every scanline so with the current method only the last change will take effect
+		if(scanlineCycle == 304) {
+			if(ppuMask.isSet("b") || ppuMask.isSet("s")) {
+				int val = vAddr.get();
+
+				val &= ~0x41F;
+				//copy the bits from t
+				val |= (tAddr.get() & 0x41F);
+				vAddr.set(val);
+			}
+
+		}
+
 		if(scanline == 30 && scanlineCycle == 64) {
 			//TODO: This is faking a sprite 0 hit for SMB
 			ppuStatus.setFlag("S", true);
@@ -284,8 +306,10 @@ public class PPU extends BusDevice implements Tickable {
 			oamAddr.set(0x00);
 
 		} else if(scanline == 239 && scanlineCycle == 340) {
-			renderBackground();
+			renderBackground2();
+			renderBuffer();
 			renderSprites();
+
 			nes.gui.renderScreen(output);
 
 			frameComplete = true;
@@ -437,8 +461,163 @@ public class PPU extends BusDevice implements Tickable {
 		}
 	}
 
-	private void renderBackground() {
+	private void renderBuffer() {
+		for(int i = 0; i < outputBuffer.length; i++) {
+			int paletteIndex = outputBuffer[i];
 
+			paletteIndex = ((paletteIndex & 0x3) == 0) ? 0 : paletteIndex;
+			int colorByte = palleteRam[paletteIndex];
+			int rgbOut = palette.colors[colorByte].getRGB();
+
+			int x = i & 0xFF;
+			int y = (i & 0xFF00) >>> 8;
+
+			output.setRGB(x, y, rgbOut);
+		}
+	}
+
+	private void renderBackground2() { //electric boogaloo
+		//Background rendering depends on the following things:
+		//-If flag m in PPUMASK is not set, background doesn't render in the 8 leftmost Screen pixels
+		//-If flag b in PPUMASK is not set, background doesn't render at all
+		//-The B flag in PPUCTRL controls wich side of the pattern memory to use
+		//-The current base name table selected through PPUCTRL
+		//-The scroll position supplied through PPUSCROLL
+
+
+		int fineY = (vAddr.get() >> 12) & 0x7;
+		int address = vAddr.get() & 0x0FFF;
+		//System.out.println(address & 0x1f);
+
+		int chrIndex = ppuRead(0x2000| address);
+
+		byte[] bitplane0 = getPatternEntry(ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 0);
+		byte[] bitplane1 = getPatternEntry(ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 1);
+
+
+		int rowBits0 = bitplane0[fineY] << 8;
+		int rowBits1 = bitplane1[fineY] << 8;
+
+		int colorShift0 = 0;
+		int colorShift1 = 0;
+
+
+		for(int y = 0; y < SCREEN_HEIGHT; y++) {
+			for(int x = 0; x < SCREEN_WIDTH; x++) {
+				int pixel = y << 8 | x;
+
+				//When the "buffer" register is empty, increment the address and load the next tile into it
+				if(pixel % 8 == 0) {
+					//increment the address and load next tile into the registers
+					//increments overflow into the nametable x
+					if((address & 0x001F) == 31) {// if coarse X == 31
+						address &= ~0x001F;          // coarse X = 0
+						address ^= 0x400;           // switch horizontal nametable
+					} else {
+						address += 1; // increment coarse X
+					}
+
+					chrIndex = ppuRead(0x2000 | address);
+					bitplane0 = getPatternEntry(ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 0);
+					bitplane1 = getPatternEntry(ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 1);
+
+
+
+					//The lower part should have been cleared either way from being shifted but just to make sure
+					rowBits0 &= ~0xFF;
+					rowBits0 &= ~0xFF;
+
+
+					rowBits0 |= bitplane0[fineY] & 0xFF;
+					rowBits1 |= bitplane1[fineY] & 0xFF;
+
+
+					//The upper 3 bits of coarse X (coarse x is the lower 5 bits of the nametable address)
+					//are the x entry into the attribute table
+
+					// NN 1111 YYY XXX
+					// || |||| ||| +++-- high 3 bits of coarse X (x/4)
+					// || |||| +++------ high 3 bits of coarse Y (y/4)
+					// || ++++---------- attribute offset (960 bytes)
+					// ++--------------- nametable select
+
+					int attributeAddr = 0x23C0 | (address & 0xC00) | ((address >> 4) & 0x38) | ((address >> 2) & 0x07);
+					int attrByte = ppuRead(attributeAddr);
+
+					int byteX = (address & 0x1F) & 0x2;
+					int byteY = ((address >> 5) & 0x1F) & 0x2;
+
+					int shift = byteX | (byteY << 1);
+
+					int paletteSelect = (attrByte >> shift) & 0x3;
+
+					colorShift0 &= ~0x1;
+					colorShift1 &= ~0x1;
+
+					colorShift0 |= paletteSelect & 1;
+					colorShift1 |= (paletteSelect & 2) >> 1;
+
+				}
+
+				//Select the bits that will be rendered at this pixel
+				int bit0 = ((rowBits0 >>> 8) >>> (7 - fineX)) & 1;
+				int bit1 = ((rowBits1 >>> 8) >>> (7 - fineX)) & 1;
+
+				//Save them to the buffer (background uses palette half 0)
+
+
+				int paletteSelect = (((colorShift0 >>> 1) >>> (7 - fineX)) & 0x1) | ((((colorShift1 >>> 1) >>> (7 - fineX)) & 0x1)  << 1);
+
+				outputBuffer[pixel] = (byte) ((paletteSelect << 2) | (bit1 << 1) | (bit0));
+
+				//Shift over the registers to the next pixel
+				rowBits0 = rowBits0 << 1;
+				rowBits1 = rowBits1 << 1;
+
+				rowBits0 &= 0xFFFF;
+				rowBits1 &= 0xFFFF;
+
+
+				colorShift0 = (colorShift0 << 1) | (colorShift0 & 0x1);
+				colorShift1 = (colorShift1 << 1) | (colorShift1 & 0x1);
+
+				colorShift0 &= 0x1FF;
+				colorShift1 &= 0x1FF;
+				//Todo: populate color shift register with first tile at start
+
+
+
+			}
+			//Finished with one scanline, now increment y of address, correctly wrapping to the next nametable
+			if(fineY < 7) {  // if fine Y < 7
+				fineY++;
+			} else {
+				fineY = 0;             // fine Y = 0
+				int cY = (address & 0x3E0) >> 5;// let y = coarse Y
+				switch(cY) {
+					case 29:
+						address ^= 0x800;          // switch vertical nametable
+					case 31:
+						cY = 0;                    // coarse Y = 0
+						break;
+					default:
+						cY += 1;                     // increment coarse Y
+				}
+				address = (address & ~0x3E0) | (cY << 5);// put coarse Y back into v
+			}
+
+			//At the end of a scanline, horizontal related bits are reloaded from t into v.
+			//We never changed v, so I can reload address variable from v instead, which was set to t once
+
+			//clear the horizontal scrolling bits
+			address &= ~0x41F;
+			//copy the bits
+			address |= (vAddr.get() & 0x41F);
+		}
+
+	}
+
+	private void renderBackground() {
 		//Go through nametable
 		for(int nameT = 0; nameT < 960; nameT++) {
 
@@ -632,6 +811,7 @@ public class PPU extends BusDevice implements Tickable {
 
 			case PPUSCROLL:
 				if(writeToggle == 0) {
+
 					fineX = data & 0x7;
 
 					//Clear lower 5 bits and set them to the upper 5 bits of data
@@ -639,7 +819,11 @@ public class PPU extends BusDevice implements Tickable {
 					val &= ~0x1F;
 					val |= data >> 3;
 
+
+
 					tAddr.set(val);
+
+
 					writeToggle = 1;
 				} else {
 					val = tAddr.get();
