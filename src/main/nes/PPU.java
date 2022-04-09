@@ -261,6 +261,8 @@ public class PPU extends BusDevice implements Tickable {
 
 
 
+
+
 				//TODO: Copying over horizontal scrolling bits, which should be done at the end of every scanline. Do it here for now.
 				//Doing this here means that if t is updated while rendering, the change will not take effect.
 				//We can technically handle the change to t later when rendering the nametable I think
@@ -482,7 +484,7 @@ public class PPU extends BusDevice implements Tickable {
 
 	private void renderBackground2() { //electric boogaloo
 		//Background rendering depends on the following things:
-		//-If flag m in PPUMASK is not set, background doesn't render in the 8 leftmost Screen pixels
+		//-Todo: If flag m in PPUMASK is not set, background doesn't render in the 8 leftmost Screen pixels
 		//-If flag b in PPUMASK is not set, background doesn't render at all
 		//-The B flag in PPUCTRL controls wich side of the pattern memory to use
 		//-The current base name table selected through PPUCTRL
@@ -490,6 +492,7 @@ public class PPU extends BusDevice implements Tickable {
 
 
 		int fineY = (vAddr.get() >> 12) & 0x7;
+
 		int address = vAddr.get() & 0x0FFF;
 		//System.out.println(address & 0x1f);
 
@@ -859,11 +862,12 @@ public class PPU extends BusDevice implements Tickable {
 
 					writeToggle = 1;
 				} else {
+
 					val = tAddr.get();
 					//Clear all the bits relevant to vertical scroll (The highest 3 = fine Y, the other 5 coarse y)
 					val &= ~0b0111001111100000;
-					val |= (data >> 3) << 5;
-					val |= (data & 0x3) << 12;
+					val |= (data >>> 3) << 5;
+					val |= (data & 0x7) << 12;
 					tAddr.set(val);
 					writeToggle = 0;
 				}

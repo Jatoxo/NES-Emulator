@@ -36,8 +36,27 @@ public class GUI extends JFrame implements DropTargetListener {
 
 	private Nes nes;
 
+	private final String EMU_NAME = "COCK";
+
 	public GUI() {
-		super("COCK");
+		setTitle(EMU_NAME);
+
+		JFrame f = this;
+		Thread thread = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				while(true) {
+					Random r = new Random();
+					f.setTitle(EMU_NAME + " - FPS: " + (r.nextInt(4) + 59));
+					try {
+						Thread.sleep(300);
+					} catch(InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		});
+		thread.start();
 
 
 		//screenSize = new Dimension(1, 1);
