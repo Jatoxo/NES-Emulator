@@ -23,6 +23,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Random;
 
+
+
 public class GUI extends JFrame implements DropTargetListener {
 
 
@@ -38,6 +40,9 @@ public class GUI extends JFrame implements DropTargetListener {
 
 	private final String EMU_NAME = "COCK";
 
+	private long lastFrame = 0;
+	long fps = 0;
+
 	public GUI() {
 		setTitle(EMU_NAME);
 
@@ -47,9 +52,9 @@ public class GUI extends JFrame implements DropTargetListener {
 			public void run() {
 				while(true) {
 					Random r = new Random();
-					f.setTitle(EMU_NAME + " - FPS: " + (r.nextInt(4) + 59));
+					f.setTitle(EMU_NAME + " - FPS: " + fps);
 					try {
-						Thread.sleep(300);
+						Thread.sleep(100);
 					} catch(InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -238,8 +243,13 @@ public class GUI extends JFrame implements DropTargetListener {
 	}
 
 	public void renderScreen(BufferedImage screen) {
+
 		img = screen;
 		repaint();
+
+		long elapsed = System.currentTimeMillis() - lastFrame;
+		fps = Math.round(1000.0 / elapsed);
+		lastFrame = System.currentTimeMillis();
 	}
 
 	public static void main(String[] args) throws InterruptedException, LineUnavailableException {
