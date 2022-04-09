@@ -19,6 +19,8 @@ public class Nes {
 	public ControllerPorts controllerPorts;
 	public GUI gui;
 
+	public boolean limitSpeed = true;
+
 	public static void main(String[] args) throws InterruptedException {
 
 
@@ -50,7 +52,7 @@ public class Nes {
 		clock.addListener(ppu, 4); //ppu go brrrrrr
 
 		//insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
-		insertCartridge("D:\\GamesSoftware\\ZZ Emulators\\NES\\Games\\Donkey Kong.nes");
+		insertCartridge("D:\\GamesSoftware\\ZZ Emulators\\NES\\Games\\mbr.nes");
 
 	}
 
@@ -61,7 +63,7 @@ public class Nes {
 			advanceFrame();
 
 			//Todo this isnt accurate at all
-			while(System.nanoTime() - lastTime < 16666666);
+			while(limitSpeed && System.nanoTime() - lastTime < 16666666);
 		}
 	}
 

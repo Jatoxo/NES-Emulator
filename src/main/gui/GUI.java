@@ -1,18 +1,12 @@
 package main.gui;
 
-import com.formdev.flatlaf.FlatDarculaLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 import main.input.StandardController;
-import main.nes.Memory;
 import main.nes.Nes;
 import main.nes.Palette;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.SourceDataLine;
 import javax.swing.*;
-import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
@@ -21,8 +15,6 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Random;
-
 
 
 public class GUI extends JFrame implements DropTargetListener {
@@ -41,7 +33,7 @@ public class GUI extends JFrame implements DropTargetListener {
 	private final String EMU_NAME = "COCK";
 
 	private long lastFrame = 0;
-	long fps = 0;
+	final ArrayList<Long> fpsBuffer = new ArrayList<>();
 
 	public GUI() {
 		setTitle(EMU_NAME);
@@ -51,10 +43,20 @@ public class GUI extends JFrame implements DropTargetListener {
 			@Override
 			public void run() {
 				while(true) {
-					Random r = new Random();
-					f.setTitle(EMU_NAME + " - FPS: " + fps);
+					long cumulativeFPS = 0;
+					int size = 0;
+					synchronized(fpsBuffer) {
+						size = fpsBuffer.size();
+						for(long fps : fpsBuffer) {
+							cumulativeFPS += fps;
+						}
+						fpsBuffer.clear();
+					}
+
+					int val = Math.round(cumulativeFPS / (float)size);
+					f.setTitle(EMU_NAME + " - FPS: " + val);
 					try {
-						Thread.sleep(100);
+						Thread.sleep(500);
 					} catch(InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -95,6 +97,8 @@ public class GUI extends JFrame implements DropTargetListener {
 			public void keyPressed(KeyEvent e) {
 				StandardController controller = (StandardController) nes.controllerPorts.player1;
 				switch(e.getKeyCode()) {
+					case KeyEvent.VK_TAB:
+						nes.limitSpeed = false;
 					case KeyEvent.VK_W:
 						controller.dpadUp = true;
 						break;
@@ -126,6 +130,8 @@ public class GUI extends JFrame implements DropTargetListener {
 			public void keyReleased(KeyEvent e) {
 				StandardController controller = (StandardController) nes.controllerPorts.player1;
 				switch(e.getKeyCode()) {
+					case KeyEvent.VK_TAB:
+						nes.limitSpeed = true;
 					case KeyEvent.VK_W:
 						controller.dpadUp = false;
 						break;
@@ -197,6 +203,7 @@ public class GUI extends JFrame implements DropTargetListener {
 	}
 	private void setupFrame() {
 
+		setFocusTraversalKeysEnabled(false);
 
 		new DropTarget(this, this);
 
@@ -248,7 +255,11 @@ public class GUI extends JFrame implements DropTargetListener {
 		repaint();
 
 		long elapsed = System.currentTimeMillis() - lastFrame;
-		fps = Math.round(1000.0 / elapsed);
+		long fps = Math.round(1000.0 / elapsed);
+		synchronized(fpsBuffer) {
+			fpsBuffer.add(fps);
+		}
+
 		lastFrame = System.currentTimeMillis();
 	}
 
