@@ -1,6 +1,7 @@
 package main.nes;
 
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class PPU extends BusDevice implements Tickable {
@@ -121,6 +122,8 @@ public class PPU extends BusDevice implements Tickable {
 	Register vAddr = new Register(0x00, Register.BitSize.BITS_16, "vAddr", "vAddr");
 	Register tAddr = new Register(0x00, Register.BitSize.BITS_16, "tAddr", "tAddr");
 
+	Register fXdummy = new Register(0x00, Register.BitSize.BITS_8, "fineX", "fineX");
+
 	int fineX = 0;
 
 	public static final int PPUDATA = 0x2007;
@@ -131,9 +134,55 @@ public class PPU extends BusDevice implements Tickable {
 
 	private int writeToggle = 0;
 
+	private long frameCycle = 0;
+
 	private int scanline = -1;
 	private int scanlineCycle = 0;
 	private boolean oddFrame = false;
+
+	private ArrayList<MidFrameChange> midFrameChanges = new ArrayList<>();
+
+	PPURenderState renderState;
+
+	private static class MidFrameChange {
+		//The cycle on which the change occured, 0 being the first visible pixel
+		long frameCycle;
+
+		//The register which has changed
+		Register register;
+
+		//The new value of this register
+		int val;
+
+		boolean handled = false;
+
+		public MidFrameChange(long frameCycle, Register register, int val) {
+			this.frameCycle = frameCycle;
+			this.register = register;
+			this.val = val;
+
+		}
+	}
+
+	private static class PPURenderState {
+
+		public PPURenderState(FlagRegister controlReg, FlagRegister maskReg, Register tReg, int fineX) {
+			ppuCtrl = new FlagRegister(controlReg.get(), Register.BitSize.BITS_8, controlReg.name, controlReg.shortName);
+			ppuCtrl.copyFlags(controlReg);
+			ppuMask = new FlagRegister(maskReg.get(), Register.BitSize.BITS_8, maskReg.name, maskReg.shortName);
+			ppuMask.copyFlags(maskReg);
+			tAddr = new Register(tReg.get(), Register.BitSize.BITS_16, tReg.name, tReg.shortName);
+			this.fineX = fineX;
+
+
+		}
+
+
+		FlagRegister ppuMask;
+		FlagRegister ppuCtrl;
+		Register tAddr;
+		int fineX;
+	}
 
 
 	public PPU(Nes nes) {
@@ -201,6 +250,7 @@ public class PPU extends BusDevice implements Tickable {
 			visibleScanlineCycle(scanline, scanlineCycle);
 
 			scanlineCycle++;
+			frameCycle++;
 
 			if(scanlineCycle == 341) {
 				scanlineCycle = 0;
@@ -209,6 +259,7 @@ public class PPU extends BusDevice implements Tickable {
 
 		} else if(scanline == 240) { //post-render scanline
 			scanlineCycle++;
+			frameCycle = 0;
 			if(scanlineCycle == 341) {
 				scanlineCycle = 0;
 				scanline++;
@@ -243,6 +294,7 @@ public class PPU extends BusDevice implements Tickable {
 		}
 
 		if(scanlineCycle == 304) {
+			midFrameChanges.clear();
 
 			if(ppuMask.isSet("b") || ppuMask.isSet("s")) {
 				//Copy vertical scrolling related bits from t to v
@@ -274,6 +326,13 @@ public class PPU extends BusDevice implements Tickable {
 				//copy the bits from t
 				val |= (tAddr.get() & 0x41F);
 				vAddr.set(val);
+
+
+				//Save the current renderstate in a variable so that it can be used for constructing the frame
+				//When a register changes, the renderstate variable is updated
+				renderState = new PPURenderState(ppuCtrl, ppuMask, tAddr, fineX);
+
+
 			}
 
 		}
@@ -284,7 +343,10 @@ public class PPU extends BusDevice implements Tickable {
 	//Scanline 0 - 239
 	private void visibleScanlineCycle(int scanline, int scanlineCycle) {
 		//TODO: hack: this is reloading at the end of every scanline so with the current method only the last change will take effect
-		if(scanlineCycle == 304) {
+		if(scanlineCycle == 0) {
+			frameComplete = false;
+		} else if(scanlineCycle == 304) {
+			/*
 			if(ppuMask.isSet("b") || ppuMask.isSet("s")) {
 				int val = vAddr.get();
 
@@ -293,6 +355,8 @@ public class PPU extends BusDevice implements Tickable {
 				val |= (tAddr.get() & 0x41F);
 				vAddr.set(val);
 			}
+
+			 */
 
 		}
 
@@ -419,8 +483,8 @@ public class PPU extends BusDevice implements Tickable {
 		//Todo: Also ignoring 8x16 sprites fuck those
 		//loop over secondaryOAM in reverse order (OAM now because im rendering all sprites at once and the evaluation is for every scanline)
 		for(int i = 0xFC; i > -1; i -= 4) {
-			int y = OAM[i] & 0xFF;
-			int x = OAM[i+3] & 0xFF;
+			int y = (OAM[i] & 0xFF) + 1;
+			int x = (OAM[i+3] & 0xFF);
 
 			if(y >= SCREEN_HEIGHT) {
 				continue;
@@ -491,9 +555,9 @@ public class PPU extends BusDevice implements Tickable {
 		//-The scroll position supplied through PPUSCROLL
 
 
-		int fineY = (vAddr.get() >> 12) & 0x7;
+		int fineY = (renderState.tAddr.get() >> 12) & 0x7;
 
-		int address = vAddr.get() & 0x0FFF;
+		int address = renderState.tAddr.get() & 0x0FFF;
 		//System.out.println(address & 0x1f);
 
 		int chrIndex;
@@ -511,8 +575,8 @@ public class PPU extends BusDevice implements Tickable {
 
 		for(int y = 0; y < SCREEN_HEIGHT; y++) {
 			chrIndex = ppuRead(0x2000| address);
-			bitplane0 = getPatternEntry(ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 0);
-			bitplane1 = getPatternEntry(ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 1);
+			bitplane0 = getPatternEntry(renderState.ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 0);
+			bitplane1 = getPatternEntry(renderState.ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 1);
 
 
 			rowBits0 = bitplane0[fineY] << 8;
@@ -554,8 +618,8 @@ public class PPU extends BusDevice implements Tickable {
 					}
 
 					chrIndex = ppuRead(0x2000 | address);
-					bitplane0 = getPatternEntry(ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 0);
-					bitplane1 = getPatternEntry(ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 1);
+					bitplane0 = getPatternEntry(renderState.ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 0);
+					bitplane1 = getPatternEntry(renderState.ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 1);
 
 
 
@@ -596,13 +660,13 @@ public class PPU extends BusDevice implements Tickable {
 				}
 
 				//Select the bits that will be rendered at this pixel
-				int bit0 = ((rowBits0 >>> 8) >>> (7 - fineX)) & 1;
-				int bit1 = ((rowBits1 >>> 8) >>> (7 - fineX)) & 1;
+				int bit0 = ((rowBits0 >>> 8) >>> (7 - renderState.fineX)) & 1;
+				int bit1 = ((rowBits1 >>> 8) >>> (7 - renderState.fineX)) & 1;
 
 				//Save them to the buffer (background uses palette half 0)
 
 
-				paletteSelect = (((colorShift0 >>> 1) >>> (7 - fineX)) & 0x1) | ((((colorShift1 >>> 1) >>> (7 - fineX)) & 0x1)  << 1);
+				paletteSelect = (((colorShift0 >>> 1) >>> (7 - renderState.fineX)) & 0x1) | ((((colorShift1 >>> 1) >>> (7 - renderState.fineX)) & 0x1)  << 1);
 
 				outputBuffer[pixel] = (byte) ((paletteSelect << 2) | (bit1 << 1) | (bit0));
 
@@ -642,12 +706,29 @@ public class PPU extends BusDevice implements Tickable {
 			}
 
 			//At the end of a scanline, horizontal related bits are reloaded from t into v.
-			//We never changed v, so I can reload address variable from v instead, which was set to t once
+
+			for(MidFrameChange change : midFrameChanges) {
+				if(change.handled) {
+					continue;
+				}
+				int elapsedCycles = (y + 1) * 340;
+				if(change.frameCycle <= elapsedCycles) {
+					//If the t register has changed on this scanline, the change needs to take effect
+					if(change.register == tAddr) {
+						//Todo: The horizontal position is only copied over if either background or sprites are enabled
+						renderState.tAddr.set(change.val);
+					} else if(change.register == fXdummy) {
+						renderState.fineX = change.val;
+					}
+					change.handled = true;
+
+				}
+			}
 
 			//clear the horizontal scrolling bits
 			address &= ~0x41F;
 			//copy the bits
-			address |= (vAddr.get() & 0x41F);
+			address |= (renderState.tAddr.get() & 0x41F);
 
 		}
 
@@ -837,11 +918,18 @@ public class PPU extends BusDevice implements Tickable {
 				//Mask out the bits that are set in t register because why the fuck not
 				ppuCtrl.set(data & ~0x3);
 
+
+
 				//The lower two bits select the nametable, this gets saved in the t register
 				val = tAddr.get();
 				val &= ~0xC00;
 				val |= (data & 0x3) << 10;
 				tAddr.set(val);
+
+				//If we are rendering, save the change
+				if(frameCycle != 0) {
+					midFrameChanges.add(new MidFrameChange(frameCycle, tAddr, tAddr.get()));
+				}
 
 				break;
 
@@ -870,6 +958,12 @@ public class PPU extends BusDevice implements Tickable {
 					val |= (data & 0x7) << 12;
 					tAddr.set(val);
 					writeToggle = 0;
+				}
+
+				//If we are rendering, save the change
+				if(frameCycle != 0) {
+					midFrameChanges.add(new MidFrameChange(frameCycle, tAddr, tAddr.get()));
+					midFrameChanges.add(new MidFrameChange(frameCycle, fXdummy, fineX));
 				}
 				break;
 
