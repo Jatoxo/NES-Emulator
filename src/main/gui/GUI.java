@@ -254,13 +254,19 @@ public class GUI extends JFrame implements DropTargetListener {
 		img = screen;
 		repaint();
 
-		long elapsed = System.currentTimeMillis() - lastFrame;
-		long fps = Math.round(1000.0 / elapsed);
-		synchronized(fpsBuffer) {
-			fpsBuffer.add(fps);
+
+		long elapsed = System.nanoTime() - lastFrame;
+		elapsed = Math.round(elapsed / 1000000.0);
+
+		if(elapsed != 0) {
+			long fps = Math.round(1000.0 / elapsed);
+
+			synchronized (fpsBuffer) {
+				fpsBuffer.add(fps);
+			}
 		}
 
-		lastFrame = System.currentTimeMillis();
+		lastFrame = System.nanoTime();
 	}
 
 	public static void main(String[] args) throws InterruptedException, LineUnavailableException {
