@@ -321,6 +321,7 @@ public class PPU extends BusDevice implements Tickable {
 
 				//v: ....A.. ...BCDEF <- t: ....A.. ...BCDEF
 
+
 				//clear the horizontal scrolling bits
 				val &= ~0x41F;
 				//copy the bits from t
@@ -369,14 +370,12 @@ public class PPU extends BusDevice implements Tickable {
 			evaluateSprites(scanline);
 
 		} else if(scanlineCycle >= 257 && scanlineCycle <= 320) {
+			//OAMADDR Is set to zero during each of these ticks
+			//https://www.nesdev.org/wiki/PPU_registers#OAM_address_($2003)_%3E_write:~:text=to%20OAMDATA)-,Values%20during%20rendering,-OAMADDR%20is%20set
 			oamAddr.set(0x00);
 
 		} else if(scanline == 239 && scanlineCycle == 340) {
-			if(ppuMask.isSet("b")) {
-				renderBackground2();
-			} else {
-				outputBuffer = new byte[SCREEN_WIDTH * SCREEN_HEIGHT];
-			}
+			renderBackground2();
 			renderBuffer();
 			renderSprites();
 
@@ -411,8 +410,10 @@ public class PPU extends BusDevice implements Tickable {
 		}
 	}
 
-
+	//During Sprite evalutation on every visible scanline, the PPU checks which Sprites should have been on that scanline. (Hence the y offset)
+	//It copies them from OAM memory which holds 64 sprites into secondary OAM which holds 8
 	private void evaluateSprites(int scanline) {
+		//Secondary OAM is initialized to zero during the first 64 Cycles
 		Arrays.fill(secondaryOAM, (byte) 0xFF);
 
 		int sOAMpointer = 0; //Points at next free slot in secondary OAM
@@ -554,6 +555,10 @@ public class PPU extends BusDevice implements Tickable {
 		//-The current base name table selected through PPUCTRL
 		//-The scroll position supplied through PPUSCROLL
 
+		if(!ppuMask.isSet("b")) {
+			outputBuffer = new byte[SCREEN_WIDTH * SCREEN_HEIGHT];
+			return;
+		}
 
 		int fineY = (renderState.tAddr.get() >> 12) & 0x7;
 
@@ -706,7 +711,7 @@ public class PPU extends BusDevice implements Tickable {
 			}
 
 			//At the end of a scanline, horizontal related bits are reloaded from t into v.
-
+			//Todo: Other registers can also be changed mid frame
 			for(MidFrameChange change : midFrameChanges) {
 				if(change.handled) {
 					continue;
@@ -882,6 +887,8 @@ public class PPU extends BusDevice implements Tickable {
 
 					readBuffer = ppuRead(vAddr.get());
 
+
+
 				} else {
 					val = ppuRead(vAddr.get());
 
@@ -895,6 +902,15 @@ public class PPU extends BusDevice implements Tickable {
 				return val;
 
 			case OAMDATA:
+				//During the first 64 cycles of every visible scanline, secondary OAM is initialized to 0xFF
+				//Reading this returns 0xFF in this time because this initialization is implemented by reading from
+				//OAM with all the lines pulled HIGH
+				//https://www.nesdev.org/wiki/PPU_sprite_evaluation#:~:text=to%20draw%20them.-,Details,-During%20all%20visible
+				if(scanline >= 0 && scanline <= 239) { //Is in visible scanline
+					if(scanlineCycle >= 1 && scanlineCycle <= 64) { //Is in first 64 cycles
+						return 0xFF;
+					}
+				}
 				return OAM[oamAddr.get()] & 0xFF;
 
 		}

@@ -5,7 +5,10 @@ import main.input.StandardController;
 import main.nes.Nes;
 import main.nes.Palette;
 
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.SourceDataLine;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
@@ -244,7 +247,8 @@ public class GUI extends JFrame implements DropTargetListener {
 
 
 
-		Image newImg = img.getScaledInstance(render.getWidth(), render.getHeight(), Image.SCALE_DEFAULT);
+		//Image newImg = img.getScaledInstance(render.getWidth(), render.getHeight(), Image.SCALE_DEFAULT);
+		Image newImg = img.getScaledInstance(render.getWidth(), render.getHeight(), Image.SCALE_FAST);
 		render.setIcon(new ImageIcon(newImg));
 
 	}
@@ -278,6 +282,7 @@ public class GUI extends JFrame implements DropTargetListener {
 		}
 
 		//JFrame.setDefaultLookAndFeelDecorated(true);
+
 		/*
 		AudioFormat format = new AudioFormat(
 				500,
@@ -289,7 +294,8 @@ public class GUI extends JFrame implements DropTargetListener {
 		SourceDataLine line = AudioSystem.getSourceDataLine(format);
 		line.open();
 		line.start();
-		while(true) {
+		int i = 0;
+		while(i < 999999) {
 			Thread.sleep(3);
 			System.out.println("Bop");
 
@@ -300,10 +306,10 @@ public class GUI extends JFrame implements DropTargetListener {
 
 			System.out.println(line.available());
 			line.write(b, 0, 2);
-
+			i++;
 		}
+		*/
 
-		 */
 
 		GUI gui = new GUI();
 
