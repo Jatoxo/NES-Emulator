@@ -142,6 +142,9 @@ public class PPU extends BusDevice implements Tickable {
 
 	private ArrayList<MidFrameChange> midFrameChanges = new ArrayList<>();
 
+	private int sprite0HitScanline = -1;
+	private int sprite0HitScanlineCycle = -1;
+
 	PPURenderState renderState;
 
 	private static class MidFrameChange {
@@ -344,8 +347,19 @@ public class PPU extends BusDevice implements Tickable {
 	//Scanline 0 - 239
 	private void visibleScanlineCycle(int scanline, int scanlineCycle) {
 		//TODO: hack: this is reloading at the end of every scanline so with the current method only the last change will take effect
-		if(scanlineCycle == 0) {
+		if(scanline == sprite0HitScanline && scanlineCycle == sprite0HitScanlineCycle) {
+			//System.out.println("Scanline:" + sprite0HitScanline);
+			//System.out.println("Cycle:" + sprite0HitScanlineCycle);
+			ppuStatus.setFlag("S", true);
+		}
+
+
+		if(scanlineCycle == 0 && scanline == 0) {
 			frameComplete = false;
+
+			renderBackground2();
+			renderSprites();
+
 		} else if(scanlineCycle == 304) {
 			/*
 			if(ppuMask.isSet("b") || ppuMask.isSet("s")) {
@@ -362,8 +376,8 @@ public class PPU extends BusDevice implements Tickable {
 		}
 
 		if(scanline == 30 && scanlineCycle == 64) {
-			//TODO: This is faking a sprite 0 hit for SMB
-			ppuStatus.setFlag("S", true);
+			//Fixed: This is faking a sprite 0 hit for SMB
+			//ppuStatus.setFlag("S", true);
 		}
 		if(scanlineCycle == 256) { //Sprite eval is technically cycles 65-256, but I do it all at once
 
@@ -376,12 +390,14 @@ public class PPU extends BusDevice implements Tickable {
 
 		} else if(scanline == 239 && scanlineCycle == 340) {
 			renderBackground2();
-			renderBuffer();
 			renderSprites();
+			renderBuffer();
 
 			nes.gui.renderScreen(output);
 
 			frameComplete = true;
+			sprite0HitScanline = -1;
+			sprite0HitScanlineCycle = -1;
 			//clear output to distinguish sprites
 			//output = new BufferedImage(SCREEN_WIDTH, SCREEN_HEIGHT, BufferedImage.TYPE_INT_RGB);
 		}
@@ -520,10 +536,26 @@ public class PPU extends BusDevice implements Tickable {
 
 					//Don't draw transparent sprites
 					if((paletteIndex & 0x3) > 0) {
-						int colorByte = palleteRam[paletteIndex];
-						int colorOut = palette.colors[colorByte].getRGB();
+						int posX = (x + (flipH ? 7 - spriteX: spriteX)) % SCREEN_WIDTH;
+						int posY = (y + spriteY) % SCREEN_HEIGHT;
+						int posByte = (posY << 8) | posX;
 
-						output.setRGB((x + (flipH ? 7 - spriteX: spriteX))%SCREEN_WIDTH, (y + spriteY)%SCREEN_HEIGHT, colorOut);
+
+						//TODO: Before a planned sprite 0 hit scroll position could change and change the location of sprite 0 hit
+						//If current sprite is sprite 0 and sprite0Hit hasn't happened this frame
+						if(i < 4 && sprite0HitScanline == -1) {
+							//If bg and sprite pixel is not transparent
+							if((outputBuffer[posByte] & 0b11) != 0 && ((paletteIndex & 0b11) != 0)) {
+								sprite0HitScanline = posY;
+								sprite0HitScanlineCycle = posX;
+							}
+						}
+						outputBuffer[posByte] = (byte) paletteIndex;
+
+						//int colorByte = palleteRam[paletteIndex];
+						//int colorOut = palette.colors[colorByte].getRGB();
+
+						//output.setRGB(, , colorOut);
 					}
 
 				}
