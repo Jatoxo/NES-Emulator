@@ -17,6 +17,8 @@ public class Register {
 
 	int address;
 
+	private int mask ;
+
 	public Register(int initialValue, BitSize size, String name, String shortName) {
 		this(initialValue, size, name, shortName, 0);
 	}
@@ -39,14 +41,16 @@ public class Register {
 		this.name = name;
 		this.shortName = shortName;
 		this.address = address;
+
+		mask = (((int) Math.pow(2, bits)) - 1);
 	}
 
 
 	public void set(int value) {
-		this.value = value & (((int) Math.pow(2, bits)) - 1);
+		this.value = value & mask;
 	}
 	public int get() {
-		return value & (((int) Math.pow(2, bits)) - 1);
+		return value & mask;
 	}
 
 	//Return the current value, then increment the Register

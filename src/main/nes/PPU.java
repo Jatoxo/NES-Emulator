@@ -202,9 +202,10 @@ public class PPU extends BusDevice implements Tickable {
 		OAM = new byte[1<<8]; //256 bytes
 		secondaryOAM = new byte[1<<5]; //32 bytes
 
-		ppuBus = new PPUBus();
+
 
 		ciram = new CIRAM(nes);
+		ppuBus = new PPUBus(ciram);
 		ppuBus.addBusDevice(ciram);
 
 
@@ -292,6 +293,8 @@ public class PPU extends BusDevice implements Tickable {
 		if(scanlineCycle == 1) {
 			//Clear sprite 0 hit flag
 			ppuStatus.setFlag("S", false);
+			//Clear V Blank flag
+			ppuStatus.setFlag("V", false);
 		} else if(scanlineCycle >= 257 && scanlineCycle <= 320) {
 			oamAddr.set(0x00);
 		}
@@ -1080,6 +1083,7 @@ public class PPU extends BusDevice implements Tickable {
 
 		this.cartridge = cartridge;
 		ppuBus.addBusDevice(cartridge);
+		ppuBus.cart = cartridge;
 	}
 }
 
