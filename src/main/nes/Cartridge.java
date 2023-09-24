@@ -13,133 +13,61 @@ import java.util.ArrayList;
 import static main.nes.mappers.Mapper.*;
 
 public class Cartridge extends BusDevice implements PPUBusDevice{
+	//Count of 16kb chunks of PRG ROM
+	int pgrRomChunks;
 
-	int pgrRomChunks; //16kb units
-	int chrRomChunks; //8kb units
+	//Count of 8kb chunks of CHR ROM
+	int chrRomChunks;
 
-
-	int mirroring = 1 << 0; //Mirroring: 0: horizontal (vertical arrangement) (CIRAM A10 = PPU A11)
-							//1: vertical (horizontal arrangement) (CIRAM A10 = PPU A10)
-	int prgRam = 1 << 1;    //1: Cartridge contains battery-backed PRG RAM ($6000-7FFF) or other persistent memory
-	int trainer = 1 << 2;   //1: 512-byte trainer at $7000-$71FF (stored before PRG data)
-	int v = 1 << 3;         //1: Ignore mirroring control or above mirroring bit; instead provide four-screen VRAM
-	int mapIdLo = 0xF0;     //Lower nybble of mapper number
-	int flags6;
-
-	int consoleType = 0b11; //Console type
-							//0: Nintendo Entertainment System/Family Computer
-                            //1: Nintendo Vs. System
-                            //2: Nintendo Playchoice 10
-							//3: Extended Console Type
-	int nes2id = 0b1100;    //2.0 has bit 2 clear and bit 3 set:
-	int mapIdHi = 0xF0;     //Higher nybble of mapper number
-	int flags7;
-
-	int mapperId;
+	//Mapper used by this cartridge
 	private Mapper mapper;
 
+	//Whether the cartridge contains battery-backed PRG RAM ($6000-7FFF) or other persistent memory
+	private boolean batteryBackedRam;
 
+	//Whether the cartridge contains a 512-byte trainer at $7000-$71FF (stored before PRG data)
+	private boolean trainer;
 
-	public Cartridge(String file) {
+	/**
+	 * Creates a new Cartridge object
+	 * @param pgrRomChunks Count of 16kb chunks of PRG ROM
+	 * @param chrRomChunks Count of 8kb chunks of CHR ROM
+	 * @param mapper Mapper ID used by this cartridge
+	 * @param batteryBackedRam Whether the cartridge contains battery-backed PRG RAM ($6000-7FFF) or other persistent memory
+	 * @param trainer Whether the cartridge contains a 512-byte trainer at $7000-$71FF (stored before PRG data)
+	 */
+	public Cartridge(
+			int pgrRomChunks,
+			int chrRomChunks,
+			Mapper mapper,
+			boolean batteryBackedRam,
+			boolean trainer
+	) {
+		//Cartridge space is 0x4020 - 0xFFFF on the CPU bus
 		super(0x4020, 0xFFFF);
 
-
-		Path path = Paths.get(file);
-
-
-
-		byte[] romFile;
-		try {
-			romFile = Files.readAllBytes(path);
-
-			if(romFile[0] == 0x4E && romFile[1] == 0x45 && romFile[2] == 0x53 && romFile[3] == 0x1A) {
-				System.out.println("iNES file format detected");
-			}
-
-			pgrRomChunks = romFile[4];
-			chrRomChunks = romFile[5];
-			flags6 = romFile[6];
-			flags7 = romFile[7];
-
-
-			boolean nes2 = ((flags7 & nes2id) >> 2) == 2;
-			System.out.print("NES2.0 Format: ");
-			if(nes2) {
-				System.out.println("Yes");
-			} else {
-				System.out.println("No");
-			}
-
-
-			int adDetection = romFile[12] | romFile[13] | romFile[14] | romFile[15];
-			if(adDetection > 0 && !nes2) {
-				//There is probably some garbage spelled across the flags here
-				flags7 &= 0x0F;
-			}
-			mapperId = (flags6 & mapIdLo) | ((flags7 & mapIdHi) << 4);
-
-			System.out.println("Mapper ID: " + mapperId);
-			System.out.print("Console Type: ");
-
-			switch(flags7 & consoleType) {
-				case 0:
-					System.out.println("Nintendo Entertainment System/Family Computer");
-					break;
-				case 1:
-					System.out.println("Nintendo Vs. System");
-					break;
-				case 2:
-					System.out.println("Nintendo Playchoice 10");
-					break;
-				case 3:
-					System.out.println("Extended Console Type");
-					break;
-				default:
-					System.out.println("Unknown");
-			}
-
-			System.out.print("Trainer: ");
-
-			boolean train = (flags6 & trainer) > 0;
-			if(train) {
-				System.out.println("No");
-			} else {
-				System.out.println("Yes");
-			}
-
-
-
-			int prgRomSize = pgrRomChunks * 16384;
-
-			byte[] programRom = new byte[prgRomSize];
-			System.arraycopy(romFile, 16 + (train ? 512 : 0), programRom, 0, programRom.length);
-
-			byte[] chrRom = new byte[chrRomChunks * 8192];
-			System.arraycopy(romFile, 16 + prgRomSize + (train ? 512 : 0), chrRom, 0, chrRom.length);
-
-
-			switch(mapperId) {
-				case NROM:
-					mapper = new NROM(programRom, pgrRomChunks, chrRom, mirrorMode());
-					break;
-				default:
-
-					System.out.println("Unknown Mapper");
-					throw new RuntimeException("Unknown Mapper");
-			}
-
-
-		} catch(IOException e) {
-			e.printStackTrace();
-		}
-
+		this.pgrRomChunks = pgrRomChunks;
+		this.chrRomChunks = chrRomChunks;
+		this.mapper = mapper;
+		this.batteryBackedRam = batteryBackedRam;
+		this.trainer = trainer;
 	}
 
 
-	private MirrorMode mirrorMode() {
-
-		return (flags6 & mirroring) > 0 ? MirrorMode.VERTICAL : MirrorMode.HORIZONTAL;
+	/**
+	 * Returns whether the cartridge has battery-backed PRG RAM ($6000-7FFF) or other persistent memory
+	 */
+	public boolean hasBatteryBackedRam() {
+		return batteryBackedRam;
 	}
+
+	/**
+	 * Returns whether the cartridge contains a 512-byte trainer at $7000-$71FF (stored before PRG data)
+	 */
+	public boolean hasTrainer() {
+		return trainer;
+	}
+
 
 	public Mapper.MirrorMode getMirrorMode(int address) {
 		return mapper.getMirrorMode(address);

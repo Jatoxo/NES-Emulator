@@ -4,11 +4,10 @@ import com.formdev.flatlaf.FlatLightLaf;
 import main.input.StandardController;
 import main.nes.Nes;
 import main.nes.Palette;
+import main.nes.parsing.RomParser;
+import main.nes.parsing.UnsupportedRomException;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.SourceDataLine;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
@@ -17,6 +16,7 @@ import java.awt.dnd.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.util.LinkedList;
 
 
@@ -38,7 +38,7 @@ public class GUI extends JFrame implements DropTargetListener {
 	private long lastFrame = 0;
 	final LinkedList<Long> fpsBuffer = new LinkedList<>();
 
-	public GUI() {
+	public GUI() throws IOException, UnsupportedRomException {
 		setTitle(EMU_NAME);
 
 		Thread fpsThread = getFPSThread();
@@ -273,7 +273,7 @@ public class GUI extends JFrame implements DropTargetListener {
 		lastFrame = System.nanoTime();
 	}
 
-	public static void main(String[] args) throws InterruptedException, LineUnavailableException {
+	public static void main(String[] args) throws InterruptedException, LineUnavailableException, IOException, UnsupportedRomException {
 		try {
 			UIManager.setLookAndFeel(new FlatLightLaf());
 
@@ -364,11 +364,11 @@ public class GUI extends JFrame implements DropTargetListener {
 		try {
 			// If the drop items are files
 			if (event.getCurrentDataFlavors()[0].isFlavorJavaFileListType()) {
-				// Get all of the dropped files
+				// Get all the dropped files
 				java.util.List<File> files = (java.util.List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
 				// Loop them through
 				for (File file : files) {
-					nes.insertCartridge(file.getPath());
+					nes.insertCartridge(RomParser.parseRom(file.getPath()));
 				}
 
 			}

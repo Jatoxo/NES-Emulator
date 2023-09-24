@@ -5,21 +5,20 @@ public class NROM extends Mapper {
 
 
 	//16kb or 32kb of PRG ROM
-	private byte[] prgRom;
+	private final byte[] prgRom;
 
 	//8kb of CHR ROM only
-	private byte[] chrRom;
+	private final byte[] chrRom;
 
-	private MirrorMode mirrorMode;
-	private int prgBanks;
+	//On NROM cartridges, the mirroring mode is hardwired to either horizontal or vertical
+	private final MirrorMode mirrorMode;
 
 
-	public NROM(byte[] prgRom, int prgBanks, byte[] chrRom, MirrorMode mirrorMode) {
-		super(0);
+	public NROM(byte[] prgRom, byte[] chrRom, MirrorMode mirrorMode) {
+		super(Mapper.NROM);
 		this.prgRom = prgRom;
 		this.chrRom = chrRom;
 		this.mirrorMode = mirrorMode;
-		this.prgBanks = prgBanks;
 	}
 
 	@Override
@@ -33,7 +32,7 @@ public class NROM extends Mapper {
 		address &= 0x7FFF;
 
 
-		if(prgBanks == 1) {
+		if(address >= prgRom.length) {
 			//Mask out 16kb chunk selector
 			address &= 0x3FFF;
 		}
