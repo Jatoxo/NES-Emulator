@@ -17,7 +17,7 @@ import java.awt.dnd.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.util.ArrayList;
+import java.util.LinkedList;
 
 
 public class GUI extends JFrame implements DropTargetListener {
@@ -36,37 +36,13 @@ public class GUI extends JFrame implements DropTargetListener {
 	private final String EMU_NAME = "COCK";
 
 	private long lastFrame = 0;
-	final ArrayList<Long> fpsBuffer = new ArrayList<>();
+	final LinkedList<Long> fpsBuffer = new LinkedList<>();
 
 	public GUI() {
 		setTitle(EMU_NAME);
 
-		JFrame f = this;
-		Thread thread = new Thread(new Runnable() {
-			@Override
-			public void run() {
-				while(true) {
-					long cumulativeFPS = 0;
-					int size = 0;
-					synchronized(fpsBuffer) {
-						size = fpsBuffer.size();
-						for(long fps : fpsBuffer) {
-							cumulativeFPS += fps;
-						}
-						fpsBuffer.clear();
-					}
-
-					int val = Math.round(cumulativeFPS / (float)size);
-					f.setTitle(EMU_NAME + " - FPS: " + val);
-					try {
-						Thread.sleep(500);
-					} catch(InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-		});
-		thread.start();
+		Thread fpsThread = getFPSThread();
+		fpsThread.start();
 
 
 		//screenSize = new Dimension(1, 1);
@@ -167,15 +143,39 @@ public class GUI extends JFrame implements DropTargetListener {
 
 
 
-
-
-
-
 		setupMenus();
 		setupFrame();
 
 
 		this.nes = new Nes(this);
+	}
+
+	private Thread getFPSThread() {
+		JFrame f = this;
+
+		//Thread for measuring FPS
+        return new Thread(() -> {
+            while(true) {
+                long cumulativeFPS = 0;
+                int size;
+
+                synchronized(fpsBuffer) {
+                    size = fpsBuffer.size();
+                    for(long fps : fpsBuffer) {
+                        cumulativeFPS += fps;
+                    }
+                    fpsBuffer.clear();
+                }
+
+                int val = Math.round(cumulativeFPS / (float)size);
+                f.setTitle(EMU_NAME + " - FPS: " + val);
+                try {
+                    Thread.sleep(500);
+                } catch(InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
 	}
 
 	private void setupMenus() {
