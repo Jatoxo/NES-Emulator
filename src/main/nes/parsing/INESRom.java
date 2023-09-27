@@ -4,9 +4,7 @@ import main.nes.Cartridge;
 import main.nes.mappers.Mapper;
 import main.nes.mappers.NROM;
 
-import java.util.Map;
-
-public class INESRom extends RomFormat {
+public class INESRom extends ROM {
 
     public enum iNESVersion {
         ARCHAIC_iNES,
@@ -17,7 +15,7 @@ public class INESRom extends RomFormat {
 
     public iNESHeader header;
     public iNESVersion version;
-    public byte[] data;
+
 
 
     //Referenced from https://www.nesdev.org/wiki/INES
@@ -46,7 +44,7 @@ public class INESRom extends RomFormat {
             int adDetection = romFile[12] | romFile[13] | romFile[14] | romFile[15];
             if(adDetection > 0 && version != iNESVersion.iNES2_0) {
                 //There is probably some garbage spelled across the flags here
-                flags7 &= 0x0F;
+                flags7 &= 0x00;
             }
         }
 

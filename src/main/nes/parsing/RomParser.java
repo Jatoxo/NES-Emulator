@@ -21,12 +21,12 @@ public class RomParser {
         //Rom files are usually very small (<1mb) so this is probably fine
         byte[] romFile = Files.readAllBytes(Path.of(romPath));
 
-        //Determine the correct parser to use
-        RomFormat rom = getParser(romFile);
+        //Determine the file format
+        ROM rom = getParser(romFile);
 
-        //If no parser is found, throw an exception
+        //If the file format is unknown, throw an exception
         if(rom == null) {
-            throw new UnsupportedRomException("No parser found for ROM file");
+            throw new UnsupportedRomException("Unknown file format or invalid header");
         }
 
         //Parse the ROM file
@@ -38,13 +38,12 @@ public class RomParser {
      * @param romFile The bytes of the ROM file
      * @return The correct Parser, or null if no parser is found
      */
-    static RomFormat getParser(byte[] romFile) {
+    static ROM getParser(byte[] romFile) {
 
         //Check for iNES file format (Beginning with "NES" followed by 0x1A)
         if(romFile[0] == 0x4E && romFile[1] == 0x45 && romFile[2] == 0x53 && romFile[3] == 0x1A) {
             return new INESRom(romFile);
         } else {
-
             return null;
         }
     }
