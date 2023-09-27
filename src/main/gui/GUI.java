@@ -17,7 +17,10 @@ import java.awt.dnd.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.util.ArrayList;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.LinkedList;
+
 
 
 public class GUI extends JFrame implements DropTargetListener {
@@ -296,19 +299,24 @@ public class GUI extends JFrame implements DropTargetListener {
 		line.start();
 		int i = 0;
 		while(i < 999999) {
-			Thread.sleep(3);
+			Thread.sleep(500);
 			System.out.println("Bop");
 
 
-			byte[] b = new byte[2];
-			b[0] = 0x40;
-			b[1] = 0x40;
+			byte[] b = new byte[200];
+			for(int j = 0; j < b.length; j += 4) {
+				b[j] = (byte) 0xFF;
+				b[j + 1] = (byte) 0x7F;
+			}
+			System.out.println(Arrays.toString(b));
 
 			System.out.println(line.available());
-			line.write(b, 0, 2);
+			line.write(b, 0, 200);
 			i++;
 		}
-		*/
+
+
+		 */
 
 
 		GUI gui = new GUI();
