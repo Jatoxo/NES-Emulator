@@ -27,8 +27,8 @@ public class Sequencer {
             this.length = length;
         }
 
-        //Map of Sequence ID to sequence data
-        Map<Integer, boolean[]> sequences = new HashMap<>();
+        //List of sequences
+        List<boolean[]> sequences = new ArrayList<>();
 
         /**
          * Set the length of all sequences in the set. All sequences must be of the same length.
@@ -41,12 +41,14 @@ public class Sequencer {
 
         /**
          * Adds a sequence to the sequence set
-         * @param id The ID to associate with the sequence
          * @param sequence One bool corresponds to one step in the sequence. True means an output will be generated
          *                 When that step is reached.
+         * @return The index of the sequence in the list
          */
-        public void addSequence(int id, boolean... sequence) {
-            sequences.put(id, sequence);
+        public int addSequence(boolean... sequence) {
+            sequences.add(sequence);
+
+            return sequences.size() - 1;
         }
     }
 
@@ -66,9 +68,8 @@ public class Sequencer {
     public void advance() {
 
         //Go through all sequences in the current set
-        for(Map.Entry<Integer, boolean[]> sequenceEntry : getCurrentSet().sequences.entrySet()) {
-            int sequenceID = sequenceEntry.getKey();
-            boolean[] sequence = sequenceEntry.getValue();
+        for(int i = 0; i < getCurrentSet().sequences.size(); i++) {
+            boolean[] sequence = getCurrentSet().sequences.get(i);
 
             //If the sequence is smaller than the current step, no ticks can be executed
             if(sequence.length <= currentStep) {
@@ -81,13 +82,16 @@ public class Sequencer {
             }
 
             //Otherwise notify all listeners
-            for(SequencerListener listener : listeners.get(sequenceID)) {
+            for(SequencerListener listener : listeners.get(i)) {
                 listener.tick(currentStep);
             }
         }
 
         //Finally, advance the current step
         currentStep++;
+
+        //Loop around once end is reached
+        currentStep %= getCurrentSet().length;
 
     }
 
@@ -123,7 +127,14 @@ public class Sequencer {
     }
 
     /**
-     * Get the sequence with the given ID. The first sequence has ID 0, the next one 1 and so on
+     * Get the currently active sequence set ID (index)
+     */
+    public int getCurrentSetID() {
+        return currentSet;
+    }
+
+    /**
+     * Get the sequence set with the given ID. The first sequence has ID 0, the next one 1 and so on
      * @param ID the ID of the sequence to get
      * @return The sequence with the given ID
      */
@@ -145,13 +156,13 @@ public class Sequencer {
     /**
      * Add a listener that will receive the output of all sequences
      * with the given ID from any set
-     * @param id The ID of the sequence to listen to
+     * @param index The index of the sequence to listen to. Starts at 0
      * @param listener The listener that will be notified when the sequence outputs
      */
-    public void addListener(int id, SequencerListener listener) {
+    public void addListener(int index, SequencerListener listener) {
         //If the hashmap already contains a listener for that key, add this one to the list
-        if(listeners.containsKey(id)) {
-            listeners.get(id).add(listener);
+        if(listeners.containsKey(index)) {
+            listeners.get(index).add(listener);
             return;
         }
 
@@ -159,6 +170,6 @@ public class Sequencer {
         List<SequencerListener> newListenerList = new ArrayList<>();
         newListenerList.add(listener);
 
-        listeners.put(id, newListenerList);
+        listeners.put(index, newListenerList);
     }
 }

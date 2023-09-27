@@ -1,0 +1,71 @@
+
+
+static class SequenceTester implements Sequencer.SequencerListener {
+		String name;
+		public SequenceTester(String name) {
+			this.name = name;
+		}
+
+		@Override
+		public void tick(int step) {
+			System.out.printf("   %s got ticked\n", name);
+		}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+        Sequencer testSequencer = new Sequencer();
+
+		SequenceTester interrupts = new SequenceTester("interrupts");
+		SequenceTester length = new SequenceTester("length");
+		SequenceTester envelope = new SequenceTester("envelope");
+
+		testSequencer.addListener(0, interrupts);
+		testSequencer.addListener(1, length);
+		testSequencer.addListener(2, envelope);
+
+		testSequencer.addSet(4);
+		testSequencer.addSet(5);
+
+		Sequencer.SequenceSet mode0 = testSequencer.getCurrentSet();
+		mode0.addSequence(false, false, false, true );
+		mode0.addSequence(false, true , false, true );
+		mode0.addSequence(true , true , true , true );
+
+		Sequencer.SequenceSet mode1 = testSequencer.getSet(1);
+		mode1.addSequence(false);
+		mode1.addSequence(true , false, true , false);
+		mode1.addSequence(true , true , true , true);
+
+
+
+		for(int j = 0; j < 5; j++) {
+			for(int i = 0; i < 10	; i++) {
+				System.out.printf("Step %s:\n", testSequencer.getCurrentStep());
+
+				testSequencer.advance();
+
+			}
+			testSequencer.reset();
+			System.out.println("Switching mode");
+
+			if(testSequencer.getCurrentSetID() == 1) {
+				testSequencer.switchSets(0);
+				continue;
+			}
+
+			testSequencer.switchSets(1);
+
+
+
+		}
