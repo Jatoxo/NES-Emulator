@@ -669,11 +669,9 @@ public class Jtx6502 implements Tickable {
 			case ADDR_ABS:
 				int low = read(pc.increment()) & 0xFF;
 				int hi = (read(pc.increment()) & 0xFF) << 8;
-				int full = low | hi;
-				return full;
+                return low | hi;
 			case ADDR_ZP0:
-				int val = read(pc.increment()) & 0xFF;
-				return val;
+                return read(pc.increment()) & 0xFF;
 			case ADDR_ZPX:
 				i = read(pc.increment());
 				return (x.get() + i) & 0xFF; //I don't know if excluding the higher bits is necessary, but I'll do it anyway

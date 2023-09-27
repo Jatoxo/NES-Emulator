@@ -37,15 +37,16 @@ public class StandardController implements Controller{
 		//The button state at the LSB will be read first (The A button)
 		//0 - A, 1 - B, 2 - Select, 3 - Start, 4 - UP, 5 - Down, 6 - Left, 7 - Right
 		buttonState &= ~0xFF;
-		buttonState |= (i(buttonA) << 0
-				| i(buttonB) << 1
+		buttonState |= (
+				  i(buttonA)      << 0
+				| i(buttonB)      << 1
 				| i(buttonSelect) << 2
-				| i(buttonStart) << 3
-				| i(dpadUp) << 4
-				| i(dpadDown) << 5
-				| i(dpadLeft) << 6
-				| i(dpadRight) << 7)
-				& 0xFF;
+				| i(buttonStart)  << 3
+				| i(dpadUp)       << 4
+				| i(dpadDown)     << 5
+				| i(dpadLeft)     << 6
+				| i(dpadRight)    << 7
+		) & 0xFF;
 
 	}
 

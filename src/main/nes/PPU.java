@@ -900,8 +900,6 @@ public class PPU extends BusDevice implements Tickable {
 	@Override
 	public int read(int addr) {
 
-
-
 		//PPU Registers only take up 8 bytes, so mask only the first 3 bits for mirroring
 		addr &= 0x7;
 		addr += 0x2000;

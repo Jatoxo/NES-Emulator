@@ -4,11 +4,10 @@ import com.formdev.flatlaf.FlatLightLaf;
 import main.input.StandardController;
 import main.nes.Nes;
 import main.nes.Palette;
+import main.nes.parsing.RomParser;
+import main.nes.parsing.UnsupportedRomException;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.SourceDataLine;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
@@ -18,9 +17,7 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.LinkedList;
-
 
 
 public class GUI extends JFrame implements DropTargetListener {
@@ -39,37 +36,13 @@ public class GUI extends JFrame implements DropTargetListener {
 	private final String EMU_NAME = "COCK";
 
 	private long lastFrame = 0;
-	final ArrayList<Long> fpsBuffer = new ArrayList<>();
+	final LinkedList<Long> fpsBuffer = new LinkedList<>();
 
-	public GUI() {
+	public GUI() throws IOException, UnsupportedRomException {
 		setTitle(EMU_NAME);
 
-		JFrame f = this;
-		Thread thread = new Thread(new Runnable() {
-			@Override
-			public void run() {
-				while(true) {
-					long cumulativeFPS = 0;
-					int size = 0;
-					synchronized(fpsBuffer) {
-						size = fpsBuffer.size();
-						for(long fps : fpsBuffer) {
-							cumulativeFPS += fps;
-						}
-						fpsBuffer.clear();
-					}
-
-					int val = Math.round(cumulativeFPS / (float)size);
-					f.setTitle(EMU_NAME + " - FPS: " + val);
-					try {
-						Thread.sleep(500);
-					} catch(InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-		});
-		thread.start();
+		Thread fpsThread = getFPSThread();
+		fpsThread.start();
 
 
 		//screenSize = new Dimension(1, 1);
@@ -170,15 +143,39 @@ public class GUI extends JFrame implements DropTargetListener {
 
 
 
-
-
-
-
 		setupMenus();
 		setupFrame();
 
 
 		this.nes = new Nes(this);
+	}
+
+	private Thread getFPSThread() {
+		JFrame f = this;
+
+		//Thread for measuring FPS
+        return new Thread(() -> {
+            while(true) {
+                long cumulativeFPS = 0;
+                int size;
+
+                synchronized(fpsBuffer) {
+                    size = fpsBuffer.size();
+                    for(long fps : fpsBuffer) {
+                        cumulativeFPS += fps;
+                    }
+                    fpsBuffer.clear();
+                }
+
+                int val = Math.round(cumulativeFPS / (float)size);
+                f.setTitle(EMU_NAME + " - FPS: " + val);
+                try {
+                    Thread.sleep(500);
+                } catch(InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
 	}
 
 	private void setupMenus() {
@@ -276,7 +273,7 @@ public class GUI extends JFrame implements DropTargetListener {
 		lastFrame = System.nanoTime();
 	}
 
-	public static void main(String[] args) throws InterruptedException, LineUnavailableException {
+	public static void main(String[] args) throws InterruptedException, LineUnavailableException, IOException, UnsupportedRomException {
 		try {
 			UIManager.setLookAndFeel(new FlatLightLaf());
 
@@ -299,24 +296,19 @@ public class GUI extends JFrame implements DropTargetListener {
 		line.start();
 		int i = 0;
 		while(i < 999999) {
-			Thread.sleep(500);
+			Thread.sleep(3);
 			System.out.println("Bop");
 
 
-			byte[] b = new byte[200];
-			for(int j = 0; j < b.length; j += 4) {
-				b[j] = (byte) 0xFF;
-				b[j + 1] = (byte) 0x7F;
-			}
-			System.out.println(Arrays.toString(b));
+			byte[] b = new byte[2];
+			b[0] = 0x40;
+			b[1] = 0x40;
 
 			System.out.println(line.available());
-			line.write(b, 0, 200);
+			line.write(b, 0, 2);
 			i++;
 		}
-
-
-		 */
+		*/
 
 
 		GUI gui = new GUI();
@@ -372,11 +364,11 @@ public class GUI extends JFrame implements DropTargetListener {
 		try {
 			// If the drop items are files
 			if (event.getCurrentDataFlavors()[0].isFlavorJavaFileListType()) {
-				// Get all of the dropped files
+				// Get all the dropped files
 				java.util.List<File> files = (java.util.List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
 				// Loop them through
 				for (File file : files) {
-					nes.insertCartridge(file.getPath());
+					nes.insertCartridge(RomParser.parseRom(file.getPath()));
 				}
 
 			}

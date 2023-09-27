@@ -4,6 +4,12 @@ import main.gui.GUI;
 import main.input.Controller;
 import main.input.ControllerPorts;
 import main.input.StandardController;
+import main.nes.parsing.RomParser;
+import main.nes.parsing.UnsupportedRomException;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static java.lang.Thread.sleep;
 
@@ -24,8 +30,6 @@ public class Nes {
 	public static void main(String[] args) throws InterruptedException {
 
 
-
-
 		//Nes nes = new Nes();
 
 		System.out.println("oof");
@@ -33,7 +37,7 @@ public class Nes {
 
 
 
-	public Nes(GUI gui) {
+	public Nes(GUI gui) throws IOException, UnsupportedRomException {
 		this.gui = gui;
 
 		cpu = new Jtx6502(this);
@@ -52,17 +56,22 @@ public class Nes {
 		clock.addListener(ppu, 4); //ppu go brrrrrr
 
 		//insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
-		insertCartridge("D:\\GamesSoftware\\ZZ Emulators\\NES\\Games\\mbr.nes");
+
+		Cartridge cart = RomParser.parseRom("D:\\GamesSoftware\\ZZ Emulators\\NES\\Games\\mbr.nes");
+		insertCartridge(cart);
+
+
 
 	}
 
 	public void start() {
+
 		while(!paused) {
 			long lastTime = System.nanoTime();
 
 			advanceFrame();
 
-			//Todo this isnt accurate at all
+			//Todo this isn't accurate at all
 			while(limitSpeed && System.nanoTime() - lastTime < 16666666);
 		}
 	}
@@ -74,9 +83,7 @@ public class Nes {
 		ppu.frameComplete = false;
 	}
 
-	public void insertCartridge(String filePath) {
-		insertCartridge(new Cartridge(filePath));
-	}
+
 	public void insertCartridge(Cartridge cart) {
 		clock.doTicks = false;
 
