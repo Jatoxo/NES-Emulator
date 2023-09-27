@@ -1,20 +1,17 @@
 package main.nes.apu;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Sequencer {
 
     //Map of sequence ID and listeners to that ID
-    Map<Integer, List<SequencerListener>> listeners = new HashMap<>();
+    private final Map<Integer, List<SequencerListener>> listeners = new HashMap<>();
 
     //List of sequence sets
-    List<SequenceSet> sequenceSets = new ArrayList<>();
+    private final List<SequenceSet> sequenceSets = new ArrayList<>();
 
     //Index into the sequence set list
-    int currentSet = 0;
+    private int currentSet = 0;
 
     //The current position in all sequences. Starting at 0
     private int currentStep = 0;
@@ -69,6 +66,11 @@ public class Sequencer {
 
         //Go through all sequences in the current set
         for(int i = 0; i < getCurrentSet().sequences.size(); i++) {
+            //Skip if there are no listeners
+            if(!listeners.containsKey(i)) {
+                continue;
+            }
+
             boolean[] sequence = getCurrentSet().sequences.get(i);
 
             //If the sequence is smaller than the current step, no ticks can be executed
@@ -81,7 +83,7 @@ public class Sequencer {
                 continue;
             }
 
-            //Otherwise notify all listeners
+            //Otherwise notify all listeners of this sequence
             for(SequencerListener listener : listeners.get(i)) {
                 listener.tick(currentStep);
             }
