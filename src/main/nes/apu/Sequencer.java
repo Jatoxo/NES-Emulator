@@ -109,6 +109,19 @@ public class Sequencer {
         return currentStep;
     }
 
+    public boolean getCurrentValue(int sequenceIndex) {
+        boolean[] sequence = getCurrentSet().sequences.get(sequenceIndex);
+
+        //If the sequence is smaller than the current step, no ticks can be executed
+        if(sequence.length <= currentStep) {
+            return false;
+
+        }
+
+
+        return sequence[currentStep];
+    }
+
 
     /**
      * Add a new sequence set

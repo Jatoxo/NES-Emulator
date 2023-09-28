@@ -71,6 +71,7 @@ public class Jtx6502 implements Tickable {
 	 */
 
 	private boolean raiseNMI = false;
+	private boolean raiseIRQ = false;
 
 
 	public Jtx6502(Nes nes) {
@@ -109,6 +110,15 @@ public class Jtx6502 implements Tickable {
 		raiseNMI = true;
 	}
 
+	public void raiseIRQ() {
+
+		//TODO: This needs work. Interrupt is level sensitive, so someone might call this function but only afterwards
+		//the inhibit flag gets cleared. In that case an interrupt still needs to be triggered.
+		raiseIRQ = true;
+
+
+	}
+
 	public void logCpuState() {
 		System.out.print(String.format("%x", currentInstruction.address).toUpperCase());
 		System.out.print(String.format(" %x", currentInstruction.opcode).toUpperCase()); //First instruction byte (opcode)
@@ -132,6 +142,9 @@ public class Jtx6502 implements Tickable {
 		if(cycles == 0 && raiseNMI) {
 			raiseNMI = false;
 			nmi();
+		} else if(cycles == 0 && raiseIRQ) {
+			raiseIRQ = false;
+			irq();
 		} else if(cycles == 0) {
 
 

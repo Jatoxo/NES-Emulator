@@ -4,12 +4,11 @@ import main.gui.GUI;
 import main.input.Controller;
 import main.input.ControllerPorts;
 import main.input.StandardController;
+import main.nes.apu.APU;
 import main.nes.parsing.RomParser;
 import main.nes.parsing.UnsupportedRomException;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static java.lang.Thread.sleep;
 
@@ -21,6 +20,7 @@ public class Nes {
 
 	public Jtx6502 cpu;
 	public PPU ppu;
+	public APU apu;
 	private Clock clock;
 	public ControllerPorts controllerPorts;
 	public GUI gui;
@@ -42,6 +42,7 @@ public class Nes {
 
 		cpu = new Jtx6502(this);
 		ppu = new PPU(this);
+		apu = new APU(this);
 
 
 
@@ -50,10 +51,16 @@ public class Nes {
 		connectController(new StandardController(), 0);
 
 		cpu.bus.addBusDevice(ppu);
+		cpu.bus.addBusDevice(apu);
 
 		clock = new Clock(Clock.NTSC_MASTER_CLOCK_SPEED);
 		clock.addListener(cpu, 12);
+		clock.addListener(apu, 12);
+
 		clock.addListener(ppu, 4); //ppu go brrrrrr
+
+
+		apu.setSequencerClock(clock);
 
 		//insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
 

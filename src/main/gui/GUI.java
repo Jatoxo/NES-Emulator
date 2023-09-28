@@ -7,6 +7,7 @@ import main.nes.Palette;
 import main.nes.parsing.RomParser;
 import main.nes.parsing.UnsupportedRomException;
 
+import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.LineUnavailableException;
 import javax.swing.*;
 import java.awt.*;
@@ -18,6 +19,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.LinkedList;
+import javax.sound.sampled.*;
 
 
 public class GUI extends JFrame implements DropTargetListener {
@@ -31,7 +33,7 @@ public class GUI extends JFrame implements DropTargetListener {
 
 	private JLabel render;
 
-	private Nes nes;
+	private final Nes nes;
 
 	private final String EMU_NAME = "COCK";
 
@@ -43,6 +45,8 @@ public class GUI extends JFrame implements DropTargetListener {
 
 		Thread fpsThread = getFPSThread();
 		fpsThread.start();
+
+
 
 
 		//screenSize = new Dimension(1, 1);
@@ -148,6 +152,63 @@ public class GUI extends JFrame implements DropTargetListener {
 
 
 		this.nes = new Nes(this);
+
+		Thread audioThread = getAudioThread();
+		audioThread.start();
+	}
+
+	private Thread getAudioThread() {
+		return new Thread(() -> {
+			AudioFormat format = new AudioFormat(
+					44100 * 4,
+					16,//bit
+					1,//channel
+					true,//signed
+					false //little endian
+			);
+
+			SourceDataLine line = null;
+			try {
+				line = AudioSystem.getSourceDataLine(format);
+			} catch (LineUnavailableException e) {
+				throw new RuntimeException(e);
+			}
+			try {
+				line.open();
+			} catch (LineUnavailableException e) {
+				throw new RuntimeException(e);
+			}
+
+			line.start();
+			try {
+				Thread.sleep(800);
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+
+			while(true) {
+
+
+
+
+				double volume = nes.apu.audioValue;
+				//System.out.println(volume);
+
+				int sampleValue = (int) (volume * 0x7FF) * 2;
+
+				//System.out.println(sampleValue);
+
+				byte low = (byte) (sampleValue & 0xFF);
+				byte high = (byte) ((sampleValue & 0x7F00) >>> 8);
+
+				while(line.available() == 0);
+				line.write(new byte[]{low, high}, 0, 2);
+
+
+
+			}
+		});
+
 	}
 
 	private Thread getFPSThread() {
@@ -283,32 +344,9 @@ public class GUI extends JFrame implements DropTargetListener {
 
 		//JFrame.setDefaultLookAndFeelDecorated(true);
 
-		/*
-		AudioFormat format = new AudioFormat(
-				500,
-				16,//bit
-				1,//channel
-				true,//signed
-				false //little endian
-		);
-		SourceDataLine line = AudioSystem.getSourceDataLine(format);
-		line.open();
-		line.start();
-		int i = 0;
-		while(i < 999999) {
-			Thread.sleep(3);
-			System.out.println("Bop");
 
 
-			byte[] b = new byte[2];
-			b[0] = 0x40;
-			b[1] = 0x40;
 
-			System.out.println(line.available());
-			line.write(b, 0, 2);
-			i++;
-		}
-		*/
 
 
 		GUI gui = new GUI();
