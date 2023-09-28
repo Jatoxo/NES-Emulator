@@ -107,6 +107,9 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
             switch(addr) {
                 //Duty, loop envelope/disable length counter, constant volume, envelope period/volume
                 case 0:
+                    int duty = (data & 0xC0) >>> 6;
+                    channel.dutySequencer.switchSets(duty);
+
                     int newDividerPeriod = (data & 0xF) + 1;
                     channel.envelope.divider.setPeriod(newDividerPeriod);
 

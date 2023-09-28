@@ -69,9 +69,7 @@ public class Sweep implements Sequencer.SequencerListener {
             if(enabled && shiftCount > 0) {
                 int targetPeriod = calculateTarget();
 
-                if(pulseTimerDivider.period < 8 || targetPeriod > 0x7FF) {
-
-                } else {
+                if(!(pulseTimerDivider.period < 8 || targetPeriod > 0x7FF)) {
                     pulseTimerDivider.setPeriod(targetPeriod);
                 }
             }
