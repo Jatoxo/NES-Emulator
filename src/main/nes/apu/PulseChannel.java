@@ -5,6 +5,8 @@ public class PulseChannel {
 
     DividerPlusOne timerDivider = new DividerPlusOne(0);
 
+    Divider timerOutputDivider = new Divider(2);
+
     Envelope envelope = new Envelope();
 
     Sequencer dutySequencer = new Sequencer();
@@ -45,11 +47,12 @@ public class PulseChannel {
      */
     public void clockTimer() {
         if(timerDivider.tick()) {
-            if(!div2) {
-                div2 = true;
-                return;
+
+            if(timerOutputDivider.tick()) {
+                dutySequencer.advance();
             }
-            dutySequencer.advance();
+
+
         }
     }
 

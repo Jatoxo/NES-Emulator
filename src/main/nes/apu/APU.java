@@ -40,6 +40,7 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
      * @return The volume level between 0 and 1
      */
     public double getVolume() {
+
         double pulse_out = 95.88 / ((8128 / (double) (pulse1.getVolume() + pulse2.getVolume())) + 100);
 
         return pulse_out;

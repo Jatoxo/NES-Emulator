@@ -70,13 +70,17 @@ public class Sweep implements Sequencer.SequencerListener {
                 int targetPeriod = calculateTarget();
 
                 if(pulseTimerDivider.period < 8 || targetPeriod > 0x7FF) {
-                    return;
+
+                } else {
+                    pulseTimerDivider.setPeriod(targetPeriod);
                 }
-
-                pulseTimerDivider.setPeriod(targetPeriod);
-
             }
 
+        }
+
+        if(sweepRegWrite) {
+            divider.reset();
+            sweepRegWrite = false;
         }
 
     }

@@ -153,8 +153,8 @@ public class GUI extends JFrame implements DropTargetListener {
 
 		this.nes = new Nes(this);
 
-		Thread audioThread = getAudioThread();
-		audioThread.start();
+		//Thread audioThread = getAudioThread();
+		//audioThread.start();
 	}
 
 	private Thread getAudioThread() {
@@ -189,20 +189,17 @@ public class GUI extends JFrame implements DropTargetListener {
 			while(true) {
 
 
-
-
 				double volume = nes.apu.audioValue;
 				//System.out.println(volume);
 
 				int sampleValue = (int) (volume * 0x7FF) * 2;
 
-				//System.out.println(sampleValue);
-
 				byte low = (byte) (sampleValue & 0xFF);
 				byte high = (byte) ((sampleValue & 0x7F00) >>> 8);
 
-				while(line.available() == 0);
+				//while(line.available() == 0);
 				line.write(new byte[]{low, high}, 0, 2);
+
 
 
 

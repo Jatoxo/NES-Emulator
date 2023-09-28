@@ -1,5 +1,6 @@
 package main.nes;
 
+import main.Audio;
 import main.gui.GUI;
 import main.input.Controller;
 import main.input.ControllerPorts;
@@ -36,6 +37,7 @@ public class Nes {
 	}
 
 
+	Audio audio;
 
 	public Nes(GUI gui) throws IOException, UnsupportedRomException {
 		this.gui = gui;
@@ -44,6 +46,7 @@ public class Nes {
 		ppu = new PPU(this);
 		apu = new APU(this);
 
+		audio = new Audio(apu);
 
 
 		controllerPorts = new ControllerPorts();
@@ -56,6 +59,7 @@ public class Nes {
 		clock = new Clock(Clock.NTSC_MASTER_CLOCK_SPEED);
 		clock.addListener(cpu, 12);
 		clock.addListener(apu, 12);
+		clock.addListener(audio, 487);
 
 		clock.addListener(ppu, 4); //ppu go brrrrrr
 

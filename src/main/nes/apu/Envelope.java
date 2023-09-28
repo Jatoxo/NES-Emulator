@@ -15,7 +15,7 @@ public class Envelope implements Sequencer.SequencerListener {
 
 
     public int getVolume() {
-        return disabled ? divider.getPeriod() : count;
+        return disabled ? divider.getPeriod() -1 : count;
     }
 
 
@@ -24,6 +24,7 @@ public class Envelope implements Sequencer.SequencerListener {
         if(reset) {
             count = 15;
             divider.reset();
+            reset = false;
 
             return;
         }
