@@ -8,7 +8,7 @@ import main.nes.Tickable;
 public class APU extends BusDevice implements Tickable, Sequencer.SequencerListener {
 
     //Sequencer responsible for ticking other components
-    private final FrameSequencer frameSequencer = new FrameSequencer();
+    public final FrameSequencer frameSequencer = new FrameSequencer();
 
     private final PulseChannel pulse1 = new PulseChannel(frameSequencer, 0);
     private final PulseChannel pulse2 = new PulseChannel(frameSequencer, 1);

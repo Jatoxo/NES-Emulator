@@ -46,7 +46,7 @@ public class LengthCounter implements Sequencer.SequencerListener {
         index &= 0x1F;
 
         //Mask upper 4 bits and shift over
-        int high = (index & 0x1E) >> 1;
+        int high = (index & 0x1E) >>> 1;
 
         int low = reloadLookup[index & 1][high];
 
