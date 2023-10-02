@@ -71,7 +71,9 @@ public class Nes {
 		//insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
 
 		Cartridge cart = RomParser.parseRom("D:\\GamesSoftware\\ZZ Emulators\\NES\\Games\\mbr.nes");
+		//Cartridge cart = RomParser.parseRom("D:\\GamesSoftware\\ZZ Emulators\\NES\\Games\\Micro Mages.nes");
 		insertCartridge(cart);
+
 
 
 
@@ -96,6 +98,10 @@ public class Nes {
 		ppu.frameComplete = false;
 	}
 
+	public void reset() {
+		cpu.reset();
+		ppu.reset();
+	}
 
 	public void insertCartridge(Cartridge cart) {
 		clock.paused = true;
