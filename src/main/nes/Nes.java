@@ -22,7 +22,7 @@ public class Nes {
 	public Jtx6502 cpu;
 	public PPU ppu;
 	public APU apu;
-	private Clock clock;
+	private MasterClock clock;
 	public ControllerPorts controllerPorts;
 	public GUI gui;
 
@@ -56,15 +56,17 @@ public class Nes {
 		cpu.bus.addBusDevice(ppu);
 		cpu.bus.addBusDevice(apu);
 
+		/*
 		clock = new Clock(Clock.NTSC_MASTER_CLOCK_SPEED);
 		clock.addListener(cpu, 12);
 		clock.addListener(apu, 12);
 		clock.addListener(audio, 487);
 
 		clock.addListener(ppu, 4); //ppu go brrrrrr
+		*/
+		clock = new MasterClock(cpu, ppu, apu, audio);
 
-
-		apu.setSequencerClock(clock);
+		//apu.setSequencerClock(clock);
 
 		//insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
 
@@ -96,7 +98,7 @@ public class Nes {
 
 
 	public void insertCartridge(Cartridge cart) {
-		clock.doTicks = false;
+		clock.paused = true;
 
 		try {
 			sleep(50);
@@ -120,7 +122,7 @@ public class Nes {
 			e.printStackTrace();
 		}
 
-		clock.doTicks = true;
+		clock.paused = false;
 	}
 
 	public void connectController(Controller controller, int port) {
