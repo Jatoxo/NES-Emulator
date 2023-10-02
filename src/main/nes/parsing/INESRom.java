@@ -98,7 +98,9 @@ public class INESRom extends ROM {
                 byte[] chrRom = new byte[header.chrRomChunks * 8192];
                 int chrRomOffset = prgRomOffset + programRom.length;
 
-                //Some roms don't fill all the CHR ROM space, so we need to make sure we don't go out of bounds
+                //Some roms don't have CHR ROM (instead they choose to write to it later),
+                // so we need to make sure we don't go out of bounds
+                //TODO: Some roms have some playchoice data at the end, so probably should just not attempt to read any CHR ROM if it reports 0 chunks
                 System.arraycopy(data, chrRomOffset , chrRom, 0, Math.min(chrRom.length, data.length - chrRomOffset));
 
 
