@@ -46,6 +46,11 @@ public class INESRom extends ROM {
                 //There is probably some garbage spelled across the flags here
                 flags7 &= 0x00;
             }
+
+            //Some roms have 0 for the CHR ROM size, in this case one 8kb chunk is assumed
+            if(chrRomChunks == 0) {
+                chrRomChunks = 1;
+            }
         }
 
         public boolean hasTrainer() {
@@ -91,8 +96,10 @@ public class INESRom extends ROM {
                 System.arraycopy(data, prgRomOffset, programRom, 0, programRom.length);
 
                 byte[] chrRom = new byte[header.chrRomChunks * 8192];
-                int chrRomOffset = 16 + prgRomSize + (header.hasTrainer() ? 512 : 0);
-                System.arraycopy(data, chrRomOffset , chrRom, 0, chrRom.length);
+                int chrRomOffset = prgRomOffset + programRom.length;
+
+                //Some roms don't fill all the CHR ROM space, so we need to make sure we don't go out of bounds
+                System.arraycopy(data, chrRomOffset , chrRom, 0, Math.min(chrRom.length, data.length - chrRomOffset));
 
 
                 mapper = new NROM(programRom, chrRom, header.getMirrorMode());
