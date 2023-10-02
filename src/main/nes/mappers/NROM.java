@@ -55,7 +55,10 @@ public class NROM extends Mapper {
 
 	@Override
 	public void ppuWrite(int address, int data) {
-		System.out.println("Trying to write to ROM... Yea...");
+		System.out.printf("Trying to write to ROM at %s... Yea...\n", Integer.toHexString(address));
+
+		//Do it anyway lol
+		chrRom[address] = (byte) data;
 	}
 
 	@Override
