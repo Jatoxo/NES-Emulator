@@ -2,7 +2,7 @@
 
 A beeeg stoopid emulador in java  
 _This emulator is in its infancy and can only run the most basic games as of writing this. Before any 
-UI is tackled it will first be made to work with most games. Audio is currently not supported. Inputs are hardmapped._
+UI is tackled it will first be made to work with most games. Inputs are hardmapped._
 
 # Philosophy
 
