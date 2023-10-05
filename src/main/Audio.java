@@ -102,11 +102,16 @@ public class Audio implements Tickable {
         buffer[bufferIndex + 1] = high;
         bufferIndex += 2;
 
+        int buffered = line.getBufferSize() - line.available();
         if(bufferIndex >= buffer.length) {
             bufferIndex = 0;
 
-            line.write(buffer, 0, Math.min(buffer.length, line.available()));
-
+            if(buffered > BUFFER_SIZE) {
+                //This is supposed to make the audio catch up if it's too slow by skipping some samples
+                line.write(buffer, 0, Math.min(line.available(), buffer.length - 1000));
+            } else {
+                line.write(buffer, 0, buffer.length);
+            }
 
 
         }
