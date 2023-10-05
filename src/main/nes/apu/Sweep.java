@@ -21,23 +21,27 @@ public class Sweep implements Sequencer.SequencerListener {
         this.pulseTimerDivider = pulseTimerDivider;
     }
 
+
+
     //Returns the target period
     public int calculateTarget() {
-        //Subtracting one because one is added to the period in the divider
-        int value = pulseTimerDivider.getPeriod() -1;
+        int value = pulseTimerDivider.getPeriod();
 
         int temp = value;
         temp >>>= shiftCount;
+
         if(negate) {
-            temp = -value;
-        }
-        if(altBehavior) {
-            temp += 1;
+            temp = -temp;
+
+            //Pulse 1 takes 1s complement
+            //Pulse 2 takes 2s complement
+            if(!altBehavior) {
+                //If this is Pulse 1, subtract 1 to get 1s complement
+                temp -= 1;
+            }
         }
 
         int target = value + temp;
-
-
 
         return Math.max(target, 0);
     }
@@ -70,6 +74,7 @@ public class Sweep implements Sequencer.SequencerListener {
                 int targetPeriod = calculateTarget();
 
                 if(!(pulseTimerDivider.period < 8 || targetPeriod > 0x7FF)) {
+
                     pulseTimerDivider.setPeriod(targetPeriod);
                 }
             }
