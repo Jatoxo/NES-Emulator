@@ -1,6 +1,12 @@
 package main.nes.apu;
 
-
+/**
+ * The pulse channel is a square wave generator with a variable duty cycle.
+ * It contains an envelope unit which determines the volume of the channel,
+ * a length counter which counts down and silences the channel when it reaches 0,
+ * a sweep unit which changes the timer period (pitch) of the channel,
+ * and a sequencer which generates the actual square wave by cycling through a sequence of 8 steps (either disabling or enabling the output)
+ */
 public class PulseChannel {
     //Divides the CPU clock by a number determined through the registers
     Divider timerDivider = new Divider(0);

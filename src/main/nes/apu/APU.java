@@ -12,6 +12,8 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
 
     private final PulseChannel pulse1 = new PulseChannel(frameSequencer, 0);
     private final PulseChannel pulse2 = new PulseChannel(frameSequencer, 1);
+    private final TriangleChannel triangle = new TriangleChannel(frameSequencer);
+    private final NoiseChannel noise = new NoiseChannel(frameSequencer);
 
 
 
@@ -44,7 +46,11 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
 
         double pulse_out = 95.88 / ((8128 / (double) (pulse1.getVolume() + pulse2.getVolume())) + 100);
 
-        return pulse_out;
+        double tnd_out =
+                159.79 / (1 / ((triangle.getVolume() / 8227.0) + (noise.getVolume()/12241.0) + (0)) + 100);
+
+
+        return pulse_out + tnd_out;
     }
 
     /**
@@ -61,6 +67,9 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
 
         pulse1.clockTimer();
         pulse2.clockTimer();
+        triangle.clockTimer();
+        noise.clockTimer();
+
 
         audioValue = getVolume();
 
@@ -81,12 +90,21 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
                 triggerInterrupt = false;
 
                 boolean pulse1enabled = pulse1.lengthCounter.getCount() > 0;
+                boolean pulse2enabled = pulse1.lengthCounter.getCount() > 0;
+                boolean triangleEnabled = triangle.lengthCounter.getCount() > 0;
+                boolean noiseEnabled = noise.lengthCounter.getCount() > 0;
+
                 if(pulse1enabled) {
                     result |= 0b0000_0001;
                 }
-                boolean pulse2enabled = pulse1.lengthCounter.getCount() > 0;
                 if(pulse2enabled) {
                     result |= 0b0000_0010;
+                }
+                if(triangleEnabled) {
+                    result |= 0b0000_0100;
+                }
+                if(noiseEnabled) {
+                    result |= 0b0000_1000;
                 }
 
                 return result;
@@ -114,7 +132,7 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
                     int newDividerPeriod = (data & 0xF);
                     channel.envelope.divider.setPeriod(newDividerPeriod);
 
-                    //This flagged is both mapped to envelope loop and lengthCounter halt
+                    //This flag is both mapped to envelope loop and lengthCounter halt
                     boolean loopFlag = (data & (1 << 5)) > 0;
                     channel.envelope.loop = loopFlag;
                     channel.lengthCounter.setHalt(loopFlag);
@@ -175,7 +193,6 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
 
                     }
 
-
                     break;
             }
 
@@ -183,6 +200,89 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
         }
 
         switch(addr) {
+            //Triangle channel
+
+            //crrr rrrr   control flag/length counter halt, reload value
+            case 0x4008:
+                boolean halt = (data & (1 << 7)) > 0;
+                triangle.lengthCounter.setHalt(halt);
+                triangle.linearCounter.controlFlag = halt;
+
+                int reloadValue = data & 0b0111_1111;
+                triangle.linearCounter.setReloadValue(reloadValue);
+                break;
+
+            //Timer low 8 bits
+            case 0x400A:
+                //Clear low byte
+                int period = triangle.timerDivider.getPeriod();
+                period &= 0xFF00;
+                //Set low byte
+                period |= data & 0xFF;
+                triangle.timerDivider.setPeriod(period);
+
+                break;
+
+            //Length counter load, timer high
+            case 0x400B:
+                //Writing to this register sets the linear counter's halt flag
+                triangle.linearCounter.setHalt(true);
+
+                //Set timer period
+                //Clear high byte
+                int period2 = triangle.timerDivider.getPeriod();
+                period2 &= 0xFF;
+                //Set high 3 bits
+                period2 |= (data & 0x7) << 8;
+                triangle.timerDivider.setPeriod(period2);
+
+                //Load into length counter
+                if(triangle.lengthCounter.isEnabled()) {
+                    //Upper 5 bits contain index into table
+                    int index = data & 0b1111_1000;
+                    triangle.lengthCounter.reloadWithIndex(index >>> 3);
+                }
+
+                break;
+
+            //Noise channel
+            // --lc vvvv   loop, constant volume, volume/envelope period
+            case 0x400C:
+                //Lower 4 bits are the envelope period
+                int newDividerPeriod = (data & 0xF);
+                noise.envelope.divider.setPeriod(newDividerPeriod);
+
+                //This flag is both mapped to envelope loop and lengthCounter halt
+                boolean loopFlag = (data & 0b0010_0000) > 0;
+                noise.envelope.loop = loopFlag;
+                noise.lengthCounter.setHalt(loopFlag);
+
+                boolean disableEnvelopeFlag = (data & (1 << 4)) > 0;
+                noise.envelope.disabled = disableEnvelopeFlag;
+
+                break;
+
+            //Random mode select, timer period index
+            case 0x400E:
+                int mode = (data & 0b1000_0000) >>> 7;
+                noise.setMode(mode);
+
+                int periodIndex = data & 0b1111;
+                noise.setPeriodByIndex(periodIndex);
+
+                break;
+            case 0x400F:
+                //Write to channels 4th register resets the envelope
+                noise.envelope.reset = true;
+
+                //Length counter load
+                if(noise.lengthCounter.isEnabled()) {
+                    //Upper 5 bits contain index into table
+                    int index = (data & 0b1111_1000) >>> 3;
+                    noise.lengthCounter.reloadWithIndex(index);
+                }
+
+                break;
 
             case 0x4015:
                 boolean pulse1enable   = (data & 1) > 0;
@@ -192,6 +292,8 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
 
                 pulse1.lengthCounter.setEnabled(pulse1enable);
                 pulse2.lengthCounter.setEnabled(pulse2enable);
+                triangle.lengthCounter.setEnabled(triangleEnable);
+                noise.lengthCounter.setEnabled(noiseEnable);
 
 
 
