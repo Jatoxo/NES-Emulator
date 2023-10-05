@@ -32,6 +32,7 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
 
         this.nes = nes;
 
+        //Listen to the IRQ sequence to trigger IRQs with the CPU
         frameSequencer.addListener(FrameSequencer.INTERRUPTS, this);
     }
 
@@ -105,7 +106,7 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
             addr &= 0x3;
 
             switch(addr) {
-                //Duty, loop envelope/disable length counter, constant volume, envelope period/volume
+                //Duty, loop envelope/halt length counter, constant volume, envelope period/volume
                 case 0:
                     int duty = (data & 0xC0) >>> 6;
                     channel.dutySequencer.switchSets(duty);
@@ -123,7 +124,8 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
 
                     break;
 
-                //Sweep unit: enabled, period, negative, shift count
+                //Sweep unit:
+                // eppp nsss - enabled, period, negative, shift count
                 case 1:
                     channel.sweep.sweepRegWrite();
 

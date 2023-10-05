@@ -8,24 +8,27 @@ public class PulseChannel {
     //Divides the timer output by 2
     Divider timerOutputDivider = new Divider(1);
 
+    //Determines the volume of the channel
     Envelope envelope = new Envelope();
 
+    //Determines the duty cycle of the channel
     Sequencer dutySequencer = new Sequencer();
 
+    //Counts down and silences the channel when it reaches 0
     LengthCounter lengthCounter = new LengthCounter();
 
+    //Changes the timer period of the channel
     Sweep sweep = new Sweep(timerDivider);
 
-
-    boolean div2 = false;
-
-
+    //Determines whether this is the first or second pulse channel
+    //The second channel's sweep unit has slightly different behaviour
     boolean secondPulse;
 
     public PulseChannel(FrameSequencer frameSequencer, int id) {
         secondPulse = id == 1;
         sweep.enableAltBehaviour(secondPulse);
 
+        //The frame sequencer clocks the Envelope, Length Counter and Sweep
         frameSequencer.addListener(FrameSequencer.ENVELOPES, envelope);
         frameSequencer.addListener(FrameSequencer.LENGTH_SWEEPS, lengthCounter);
         frameSequencer.addListener(FrameSequencer.LENGTH_SWEEPS, sweep);
