@@ -13,7 +13,9 @@ public class LengthCounter implements Sequencer.SequencerListener {
         if(!enabled) {
             return;
         }
+
         count = getReloadValue(index);
+
     }
 
     public int getCount() {
@@ -46,19 +48,15 @@ public class LengthCounter implements Sequencer.SequencerListener {
 
 
     public static int getReloadValue(int index) {
+
         //Mask to 5 bits
         index &= 0b11111;
 
-        //Upper 4 of the 5 bits stay and become the high bits
+        //Upper 4 of the 5 bits select a byte from the lookup table
         int high = (index & 0b11110) >>> 1;
 
-        //The lower byte is determined through a lookup table
-        //And depends on the last bit and the upper bits
-        int low = reloadLookup[index & 1][high];
-
-        int result = (high << 8) | low;
-
-        return result;
+        //The lowest bit selects which table to use
+        return reloadLookup[index & 1][high];
     }
 
     /**
@@ -67,7 +65,9 @@ public class LengthCounter implements Sequencer.SequencerListener {
      */
     @Override
     public void tick(int step) {
+
         if(!halt && count > 0) {
+
             count--;
         }
 
