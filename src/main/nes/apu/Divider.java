@@ -19,18 +19,17 @@ public class Divider {
 
     /**
      * Tick the divider.
-     * If the divider reaches 0, an output is generated (function returns true) and the divider
+     * If the divider is clocked when the count is 0, an output is generated (function returns true) and the divider
      * is reset
      * @return True if the divider outputs this tick
      */
     public boolean tick() {
-        value--;
-
         if(value == 0) {
             value = period;
             return true;
         }
 
+        value--;
         return false;
     }
 

@@ -10,7 +10,7 @@ public class FrameSequencer extends Sequencer implements Tickable {
     public static final int LENGTH_SWEEPS = 1;
     public static final int ENVELOPES = 2;
 
-    public final Divider divider = new Divider(89490);
+    public final Divider divider = new Divider(89489);
     /**
      * Just a Sequencer configured with sequences for the APU frame sequencer and a divider
      * Add listeners using the enums for the index

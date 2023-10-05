@@ -110,7 +110,7 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
                     int duty = (data & 0xC0) >>> 6;
                     channel.dutySequencer.switchSets(duty);
 
-                    int newDividerPeriod = (data & 0xF) + 1;
+                    int newDividerPeriod = (data & 0xF);
                     channel.envelope.divider.setPeriod(newDividerPeriod);
 
                     //This flagged is both mapped to envelope loop and lengthCounter halt
@@ -130,7 +130,7 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
                     boolean enabled = (data & 0x80) > 0;
                     channel.sweep.setEnabled(enabled);
 
-                    int sweepPeriod = ((data & 0x70) >>> 4) + 1;
+                    int sweepPeriod = ((data & 0x70) >>> 4);
                     channel.sweep.divider.setPeriod(sweepPeriod);
 
                     boolean negate = (data & 0x8) > 0;

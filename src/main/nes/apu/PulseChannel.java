@@ -2,10 +2,11 @@ package main.nes.apu;
 
 
 public class PulseChannel {
+    //Divides the CPU clock by a number determined through the registers
+    Divider timerDivider = new Divider(0);
 
-    DividerPlusOne timerDivider = new DividerPlusOne(0);
-
-    Divider timerOutputDivider = new Divider(2);
+    //Divides the timer output by 2
+    Divider timerOutputDivider = new Divider(1);
 
     Envelope envelope = new Envelope();
 

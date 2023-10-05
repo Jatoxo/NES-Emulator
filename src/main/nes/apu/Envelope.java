@@ -15,7 +15,7 @@ public class Envelope implements Sequencer.SequencerListener {
 
 
     public int getVolume() {
-        return disabled ? divider.getPeriod() -1 : count;
+        return disabled ? divider.getPeriod() : count;
     }
 
 
