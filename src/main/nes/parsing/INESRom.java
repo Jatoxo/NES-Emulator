@@ -1,6 +1,7 @@
 package main.nes.parsing;
 
 import main.nes.Cartridge;
+import main.nes.mappers.MMC1;
 import main.nes.mappers.Mapper;
 import main.nes.mappers.NROM;
 
@@ -20,8 +21,8 @@ public class INESRom extends ROM {
 
     //Referenced from https://www.nesdev.org/wiki/INES
     public class iNESHeader {
-        public byte pgrRomChunks;
-        public byte chrRomChunks;
+        public byte pgrRomChunks; //Count of 16kb chunks of PRG ROM
+        public byte chrRomChunks; //Count of 8kb chunks of CHR ROM
         public byte flags6;  //Mapper, mirroring, battery, trainer
         public byte flags7;  //Mapper, VS/Playchoice, NES 2.0
         public byte flags8;  //PRG-RAM size (rarely used extension)
@@ -105,6 +106,20 @@ public class INESRom extends ROM {
 
 
                 mapper = new NROM(programRom, chrRom, header.getMirrorMode());
+                break;
+            case Mapper.MMC1:
+                int prgRomSizeMMC1 = header.pgrRomChunks * 16384;
+                byte[] programRomMMC1 = new byte[prgRomSizeMMC1];
+
+                int prgRomOffsetMMC1 = 16 + (header.hasTrainer() ? 512 : 0);
+                System.arraycopy(data, prgRomOffsetMMC1, programRomMMC1, 0, programRomMMC1.length);
+
+                byte[] chrRomMMC1 = new byte[header.chrRomChunks * 8192];
+                int chrRomOffsetMMC1 = prgRomOffsetMMC1 + programRomMMC1.length;
+
+                System.arraycopy(data, chrRomOffsetMMC1 , chrRomMMC1, 0, Math.min(chrRomMMC1.length, data.length - chrRomOffsetMMC1));
+
+                mapper = new MMC1(programRomMMC1, header.pgrRomChunks, chrRomMMC1, header.chrRomChunks);
                 break;
 
             default:

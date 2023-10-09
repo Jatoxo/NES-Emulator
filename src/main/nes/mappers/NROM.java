@@ -44,6 +44,22 @@ public class NROM extends Mapper {
 	@Override
 	public void cpuWrite(int address, int data) {
 		System.out.println("Trying to write to ROM... Yea...");
+
+		//Prg Rom starts at 0x8000
+		if(address < 0x8000) {
+			return;
+		}
+
+		//Mask out to be in cartridge address
+		address &= 0x7FFF;
+
+
+		if(address >= prgRom.length) {
+			//Mask out 16kb chunk selector
+			address &= 0x3FFF;
+		}
+
+		prgRom[address] = (byte) data;
 	}
 
 	@Override
