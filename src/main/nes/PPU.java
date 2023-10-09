@@ -295,6 +295,8 @@ public class PPU extends BusDevice implements Tickable {
 			ppuStatus.setFlag("S", false);
 			//Clear V Blank flag
 			ppuStatus.setFlag("V", false);
+			//Clear sprite
+			ppuStatus.setFlag("O", false);
 		} else if(scanlineCycle >= 257 && scanlineCycle <= 320) {
 			oamAddr.set(0x00);
 		}
@@ -865,6 +867,11 @@ public class PPU extends BusDevice implements Tickable {
 		if(addr >= PALLETE_RAM_INDEX_START) {
 			//Mask out 5 bits for mirroring
 			addr &= 0x1F;
+
+			if((addr & 0x3) == 0) {
+				addr &= 0xF;
+			}
+
 			return palleteRam[addr] & 0xFF;
 		}
 
@@ -882,7 +889,6 @@ public class PPU extends BusDevice implements Tickable {
 			addr &= 0x1F;
 
 			//When two last bits are 0, disable bit A4 (To force Background Palette) since these are mirrors of those locations
-			//Todo: Why arent we doing this in ppuRead?
 			if((addr & 0x3) == 0) {
 				addr &= 0xF;
 			}
