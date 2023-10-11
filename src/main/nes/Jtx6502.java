@@ -682,13 +682,7 @@ public class Jtx6502 implements Tickable {
 			case ADDR_REL:
 				int offset = read(pc.increment());
 
-
-				if((offset & (1<<7)) == 0) {
-					addr = pc.get() + offset;
-				} else {
-					int noffset = ((~offset) + 1) & 0xFF;
-					addr = pc.get() - noffset; //todo: this is dumb
-				}
+				addr = pc.get() + (byte) offset;
 
 				if((addr & 0xFF00) != (pc.get() & 0xFF00)) {
 					pageCrossed = true;
