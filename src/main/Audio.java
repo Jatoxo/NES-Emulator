@@ -3,10 +3,7 @@ package main;
 import main.nes.Tickable;
 import main.nes.apu.APU;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.SourceDataLine;
+import javax.sound.sampled.*;
 import javax.swing.*;
 
 public class Audio implements Tickable {
@@ -30,18 +27,9 @@ public class Audio implements Tickable {
             true,//signed
             false //little endian
     );
-    AudioFormat formatSpeed = new AudioFormat(
-            44500,
-            16,//bit
-            1,//channel
-            true,//signed
-            false //little endian
-    );
 
     public Audio(APU apu) {
         this.apu = apu;
-
-
 
 
         line = null;
@@ -102,7 +90,21 @@ public class Audio implements Tickable {
         buffer[bufferIndex + 1] = high;
         bufferIndex += 2;
 
+        //Todo: Figure out how to properly buffer samples and avoid underrun pops
+
+
+
+
+
         int buffered = line.getBufferSize() - line.available();
+
+
+
+/*
+        if(buffered < BUFFER_SIZE) {
+            line.write(buffer, bufferIndex - 2, 2);
+        }
+  */
         if(bufferIndex >= buffer.length) {
             bufferIndex = 0;
 
@@ -115,6 +117,7 @@ public class Audio implements Tickable {
 
 
         }
+
 
 
     }

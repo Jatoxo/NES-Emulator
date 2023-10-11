@@ -16,7 +16,7 @@ public class MasterClock {
 
 
     Audio audio;
-    int audioStep = 487;
+    int audioStep = 486;
 
     public MasterClock(Jtx6502 cpu, PPU ppu, APU apu, Audio audio) {
         this.cpu = cpu;
@@ -46,7 +46,7 @@ public class MasterClock {
 
 
         if(audioStep == 0) {
-            audioStep = 487;
+            audioStep = 486;
             audio.tick();
         }
         audioStep--;
