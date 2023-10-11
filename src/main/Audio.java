@@ -72,7 +72,7 @@ public class Audio implements Tickable {
 
     @Override
     public void tick() {
-        double audioValue = apu.audioValue;
+        double audioValue = apu.getVolume();
 
 
         int sampleValue;

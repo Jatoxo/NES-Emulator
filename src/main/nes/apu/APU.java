@@ -71,7 +71,7 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
         noise.clockTimer();
 
 
-        audioValue = getVolume();
+        //audioValue = getVolume();
 
     }
 
