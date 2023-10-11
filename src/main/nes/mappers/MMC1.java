@@ -95,7 +95,7 @@ public class MMC1 extends Mapper {
                 case 1:
                     //32kb chunk
                     //Bank is 4-Bit value. Lower bit is ignored in this 32kb chunk mode
-                    byte bankSelect = (byte) (programRomBank & 0b1110);
+                    byte bankSelect = (byte) (getCurrentProgramBank() & 0b1110);
 
                     return prgRom[bankSelect][bankAddress];
                 case 2:
@@ -104,7 +104,7 @@ public class MMC1 extends Mapper {
 
                 case 3:
                     //Bank is switched to the one selected by control register in this mode
-                    return prgRom[programRomBank][bankAddress];
+                    return prgRom[getCurrentProgramBank()][bankAddress];
             }
 
 
@@ -120,12 +120,12 @@ public class MMC1 extends Mapper {
                     //32kb chunk
                     //Bank is 4-Bit value. Lower bit is ignored in this 32kb chunk mode
                     //Adding one since this is the second bank of the two 16kb chunks
-                    byte bankSelect = (byte) ((programRomBank & 0b1110) + 1);
+                    byte bankSelect = (byte) ((getCurrentProgramBank() & 0b1110) + 1);
 
                     return prgRom[bankSelect][bankAddress];
                 case 2:
                     //Bank is switched to the one selected by control register in this mode
-                    return prgRom[programRomBank][bankAddress];
+                    return prgRom[getCurrentProgramBank()][bankAddress];
 
                 case 3:
                     //This bank is fixed to the last bank in this mode
