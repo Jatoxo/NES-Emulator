@@ -42,7 +42,7 @@ public class Nes {
 	public Nes(GUI gui) throws IOException, UnsupportedRomException {
 		this.gui = gui;
 
-		cpu = new Jtx6502(this);
+		cpu = new Jtx6502();
 		ppu = new PPU(this);
 		apu = new APU(this);
 
@@ -50,6 +50,7 @@ public class Nes {
 
 
 		controllerPorts = new ControllerPorts();
+		cpu.bus.addBusDevice(new Memory());
 		cpu.bus.addBusDevice(controllerPorts);
 		connectController(new StandardController(), 0);
 

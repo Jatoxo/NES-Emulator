@@ -27,7 +27,7 @@ public class Jtx6502 implements Tickable {
 
 	Nes nes;
 
-	Bus bus;
+	public Bus bus;
 	Clock clock;
 
 	//Status register mask bits
@@ -42,21 +42,21 @@ public class Jtx6502 implements Tickable {
 
 
 	//Registers (8-Bit, pc is 16 bit)
-	Register a = new Register(0x00, Register.BitSize.BITS_8, "Accumulator", "A"); //Accumulator Register
-	Register x = new Register(0x00, Register.BitSize.BITS_8, "X index reg", "X"); //X (Index Register)
-	Register y = new Register(0x00, Register.BitSize.BITS_8, "Y index reg", "Y"); //Y (Index Register)
-	Register s = new Register(0x00, Register.BitSize.BITS_8, "Stack Pointer", "S"); //Stack Pointer (Points to location on bus)
-	Register pc = new Register(0x00, Register.BitSize.BITS_16, "Program Counter", "PC"); //Program counter
+	public Register a = new Register(0x00, Register.BitSize.BITS_8, "Accumulator", "A"); //Accumulator Register
+	public Register x = new Register(0x00, Register.BitSize.BITS_8, "X index reg", "X"); //X (Index Register)
+	public Register y = new Register(0x00, Register.BitSize.BITS_8, "Y index reg", "Y"); //Y (Index Register)
+	public Register s = new Register(0x00, Register.BitSize.BITS_8, "Stack Pointer", "S"); //Stack Pointer (Points to location on bus)
+	public Register pc = new Register(0x00, Register.BitSize.BITS_16, "Program Counter", "PC"); //Program counter
 
-	int status = 0x00; //Status register
-	FlagRegister statusF = new FlagRegister(0x00, Register.BitSize.BITS_8, "Status", "P");
+	public int status = 0x00; //Status register
+	//public FlagRegister statusF = new FlagRegister(0x00, Register.BitSize.BITS_8, "Status", "P");
 
 
 
 	int addr_abs = 0x0000;
 	int addr_rel = 0x00;
 	int opcode = 0x00;
-	int cycles = 0;
+	public int cycles = 0;
 
 	long totalCycles = 0;
 
@@ -74,10 +74,10 @@ public class Jtx6502 implements Tickable {
 	private boolean raiseIRQ = false;
 
 
-	public Jtx6502(Nes nes) {
-		this.nes = nes;
+	public Jtx6502() {
 		this.bus = new Bus();
 
+		/**
 		statusF.addFlag("Carry", "C", C);
 		statusF.addFlag("Zero", "Z", Z);
 		statusF.addFlag("IRQ Disable", "I", I);
@@ -85,6 +85,7 @@ public class Jtx6502 implements Tickable {
 		statusF.addFlag("B-Flag", "B", B);
 		statusF.addFlag("Overflow", "V", V);
 		statusF.addFlag("Negative", "N", N);
+		*/
 		/*
 		BufferedReader reader;
 		try {
@@ -112,6 +113,7 @@ public class Jtx6502 implements Tickable {
 
 	public void raiseIRQ() {
 
+		System.out.println("IRQ raised");
 		//TODO: This needs work. Interrupt is level sensitive, so someone might call this function but only afterwards
 		//the inhibit flag gets cleared. In that case an interrupt still needs to be triggered.
 		raiseIRQ = true;

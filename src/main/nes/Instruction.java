@@ -63,12 +63,12 @@ public class Instruction {
 
 
 
-	String mnemonic;
+	public String mnemonic;
 
-	int opcode;
-	int addressingMode;
-	int operation;
-	int cycles;
+	public int opcode;
+	public int addressingMode;
+	public int operation;
+	public int cycles;
 
 	public int address;
 	

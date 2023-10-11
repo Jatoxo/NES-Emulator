@@ -13,8 +13,6 @@ public class Bus {
 
 	public Bus() {
 		busDevices = new ArrayList<>();
-
-		busDevices.add(new Memory());
 	}
 
 	public void addBusDevice(BusDevice busDevice) {
