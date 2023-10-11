@@ -43,7 +43,8 @@ public class NROM extends Mapper {
 
 	@Override
 	public void cpuWrite(int address, int data) {
-		System.out.println("Trying to write to ROM... Yea...");
+		//TODO: Tie together logic for reading and writing
+		//System.out.println("Trying to write to ROM... Yea...");
 
 		//Prg Rom starts at 0x8000
 		if(address < 0x8000) {

@@ -8,5 +8,9 @@ public abstract class ROM {
 
     public abstract int getMapperId();
 
+    public abstract byte[] getProgramRom();
+
+    public abstract byte[] getCharacterRom();
+
     public byte[] data;
 }

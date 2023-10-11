@@ -48,10 +48,6 @@ public class INESRom extends ROM {
                 flags7 &= 0x00;
             }
 
-            //Some roms have 0 for the CHR ROM size, in this case one 8kb chunk is assumed
-            if(chrRomChunks == 0) {
-                chrRomChunks = 1;
-            }
         }
 
         public boolean hasTrainer() {
@@ -79,6 +75,16 @@ public class INESRom extends ROM {
             version = iNESVersion.iNES;
         }
 
+        System.out.println("---- ROM INFO ----");
+        System.out.println("iNES version: " + version);
+        System.out.println("Chr rom chunks: " + header.chrRomChunks);
+        System.out.println("Prg rom chunks: " + header.pgrRomChunks);
+        System.out.println("Mapper: " + getMapperId());
+        System.out.println("Has trainer: " + header.hasTrainer());
+        System.out.println("Has persistent memory: " + header.hasPersistentMemory());
+        System.out.println("Mirror mode: " + header.getMirrorMode());
+
+
 
     }
 
@@ -89,37 +95,11 @@ public class INESRom extends ROM {
 
         switch(mapperId) {
             case Mapper.NROM:
-                int prgRomSize = header.pgrRomChunks * 16384;
-
-                byte[] programRom = new byte[prgRomSize];
-
-                int prgRomOffset = 16 + (header.hasTrainer() ? 512 : 0);
-                System.arraycopy(data, prgRomOffset, programRom, 0, programRom.length);
-
-                byte[] chrRom = new byte[header.chrRomChunks * 8192];
-                int chrRomOffset = prgRomOffset + programRom.length;
-
-                //Some roms don't have CHR ROM (instead they choose to write to it later),
-                // so we need to make sure we don't go out of bounds
-                //TODO: Some roms have some playchoice data at the end, so probably should just not attempt to read any CHR ROM if it reports 0 chunks
-                System.arraycopy(data, chrRomOffset , chrRom, 0, Math.min(chrRom.length, data.length - chrRomOffset));
-
-
-                mapper = new NROM(programRom, chrRom, header.getMirrorMode());
+                mapper = new NROM(getProgramRom(), getCharacterRom(), header.getMirrorMode());
                 break;
+
             case Mapper.MMC1:
-                int prgRomSizeMMC1 = header.pgrRomChunks * 16384;
-                byte[] programRomMMC1 = new byte[prgRomSizeMMC1];
-
-                int prgRomOffsetMMC1 = 16 + (header.hasTrainer() ? 512 : 0);
-                System.arraycopy(data, prgRomOffsetMMC1, programRomMMC1, 0, programRomMMC1.length);
-
-                byte[] chrRomMMC1 = new byte[header.chrRomChunks * 8192];
-                int chrRomOffsetMMC1 = prgRomOffsetMMC1 + programRomMMC1.length;
-
-                System.arraycopy(data, chrRomOffsetMMC1 , chrRomMMC1, 0, Math.min(chrRomMMC1.length, data.length - chrRomOffsetMMC1));
-
-                mapper = new MMC1(programRomMMC1, header.pgrRomChunks, chrRomMMC1, header.chrRomChunks);
+                mapper = new MMC1(getProgramRom(), header.pgrRomChunks, getCharacterRom(), Math.max(header.chrRomChunks, 1));
                 break;
 
             default:
@@ -133,6 +113,35 @@ public class INESRom extends ROM {
                 header.hasPersistentMemory(),
                 header.hasTrainer()
         );
+    }
+
+    @Override
+    public byte[] getProgramRom() {
+        int prgRomSize = header.pgrRomChunks * 16384;
+
+        byte[] programRom = new byte[prgRomSize];
+
+        int prgRomOffset = 16 + (header.hasTrainer() ? 512 : 0);
+
+        System.arraycopy(data, prgRomOffset, programRom, 0, programRom.length);
+
+        return programRom;
+    }
+
+    @Override
+    public byte[] getCharacterRom() {
+        if(header.chrRomChunks == 0) {
+            //If the ROM specifies 0 chunks of CHR ROM, it means that the cartridge uses CHR RAM instead, and 8kb is to be assumed
+            return new byte[8192];
+        }
+
+        byte[] chrRom = new byte[header.chrRomChunks * 8192];
+
+        int chrRomOffset = 16 + (header.hasTrainer() ? 512 : 0) + (header.pgrRomChunks * 16384);
+
+        System.arraycopy(data, chrRomOffset , chrRom, 0, chrRom.length);
+
+        return chrRom;
     }
 
     public int getMapperId() {
