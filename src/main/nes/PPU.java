@@ -21,7 +21,7 @@ public class PPU extends BusDevice implements Tickable {
 
 	Nes nes;
 
-	BufferedImage output;
+	public BufferedImage output;
 
 	//Output buffer, one byte corresponds to one pixel and represents an address into palette ram
 	byte[] outputBuffer = new byte[SCREEN_WIDTH * SCREEN_HEIGHT];
@@ -40,8 +40,8 @@ public class PPU extends BusDevice implements Tickable {
 	private Cartridge cartridge;
 	private final PPUBus ppuBus;
 	private byte[] palleteRam;
-	private byte[] OAM;
-	private byte[] secondaryOAM;
+	private final byte[] OAM;
+	private final byte[] secondaryOAM;
 
 	private final CIRAM ciram;
 
@@ -64,7 +64,13 @@ public class PPU extends BusDevice implements Tickable {
 	//|+-------- PPU master/slave select
 	//|          (0: read backdrop from EXT pins; 1: output color on EXT pins)
 	//+--------- Generate an NMI at the start of the vertical blanking interval (0: off; 1: on)
-
+	public static final int CTRL_NN = 0x3; ///Nametable select (0 = $2000; 1 = $2400; 2 = $2800; 3 = $2C00)
+	public static final int CTRL_I =  0x4; ///Increment (0: add 1, going across; 1: add 32, going down)
+	public static final int CTRL_S =  0x8; ///Sprite Pattern table (0 = $0000; 1 = $1000)
+	public static final int CTRL_B = 0x10; ///Background Pattern table (0 = $0000; 1 = $1000)
+	public static final int CTRL_H = 0x20; ///Sprite Size (0: 8x8 pixels; 1: 8x16 pixels)
+	public static final int CTRL_P = 0x40; ///PPU master/slave select (0: read backdrop from EXT pins; 1: output color on EXT pins)
+	public static final int CTRL_V = 0x80; ///Generate an NMI at the start of the vertical blanking interval (0: off; 1: on)
 
 	public static final int PPUMASK = 0x2001;
 	FlagRegister ppuMask = new FlagRegister(0x00, Register.BitSize.BITS_8, "PPU Mask", "PPUMASK", 0x2001);
@@ -80,7 +86,14 @@ public class PPU extends BusDevice implements Tickable {
 	//||+------- Emphasize red (green on PAL/Dendy)
 	//|+-------- Emphasize green (red on PAL/Dendy)
 	//+--------- Emphasize blue
-
+	public static final int MASK_G   =  0x1; //(0: normal color; 1: produce a monochrome display)
+	public static final int MASK_BGL =  0x2; //Show Background in leftmost 8 pixels of screen (0: hide; 1: show)
+	public static final int MASK_SPL =  0x4; //Show Sprites in leftmost 8 pixels of screen (0: hide; 1: show)
+	public static final int MASK_BG  =  0x8; //Show background
+	public static final int MASK_SP  = 0x10; //Show sprites
+	public static final int MASK_ER  = 0x20; //Emphasize red (green on PAL/Dendy)
+	public static final int MASK_EG  = 0x40; //Emphasize green (red on Pal/Dendy)
+	public static final int MASK_EB  = 0x80; //Emphasize blue
 
 
 	public static final int PPUSTATUS = 0x2002;
@@ -105,10 +118,12 @@ public class PPU extends BusDevice implements Tickable {
 	//           Set at dot 1 of line 241 (the line *after* the post-render
 	//           line); cleared after reading $2002 and at dot 1 of the
 	//           pre-render line.
-
+	public static final int STATUS_O = 0x20; //Sprite Overflow
+	public static final int STATUS_S = 0x40; //Sprite 0 Hit.  Set when a nonzero pixel of sprite 0 overlaps a nonzero background pixel; cleared at dot 1 of the pre-render line.  Used for raster timing.
+	public static final int STATUS_V = 0x80; //Vertical blank has started (0: not in vblank; 1: in vblank).
 
 	public static final int OAMADDR = 0x2003;
-	FlagRegister oamAddr = new FlagRegister(0x00, Register.BitSize.BITS_8, "OAM Address", "OAMADDR", 0x2003);
+	Register oamAddr = new Register(0x00, Register.BitSize.BITS_8, "OAM Address", "OAMADDR", 0x2003);
 
 	public static final int OAMDATA = 0x2004;
 
@@ -170,9 +185,7 @@ public class PPU extends BusDevice implements Tickable {
 
 		public PPURenderState(FlagRegister controlReg, FlagRegister maskReg, Register tReg, int fineX) {
 			ppuCtrl = new FlagRegister(controlReg.get(), Register.BitSize.BITS_8, controlReg.name, controlReg.shortName);
-			ppuCtrl.copyFlags(controlReg);
 			ppuMask = new FlagRegister(maskReg.get(), Register.BitSize.BITS_8, maskReg.name, maskReg.shortName);
-			ppuMask.copyFlags(maskReg);
 			tAddr = new Register(tReg.get(), Register.BitSize.BITS_16, tReg.name, tReg.shortName);
 			this.fineX = fineX;
 
@@ -205,9 +218,9 @@ public class PPU extends BusDevice implements Tickable {
 
 		ciram = new CIRAM(nes);
 		ppuBus = new PPUBus(ciram);
-		ppuBus.addBusDevice(ciram);
+		//ppuBus.addBusDevice(ciram);
 
-
+		/*
 		ppuCtrl.addFlag("Nametable Select", "NN", 0x3); //(0 = $2000; 1 = $2400; 2 = $2800; 3 = $2C00)
 		ppuCtrl.addFlag("Increment", "I", 0x4);  //(0: add 1, going across; 1: add 32, going down)
 		ppuCtrl.addFlag("Sprite Pattern Table", "S", 0x8); //(0 = $0000; 1 = $1000)
@@ -228,6 +241,8 @@ public class PPU extends BusDevice implements Tickable {
 		ppuStatus.addFlag("Sprite Overflow", "O", 0x20);
 		ppuStatus.addFlag("Sprite 0 Hit", "S", 0x40); //Sprite 0 Hit.  Set when a nonzero pixel of sprite 0 overlaps a nonzero background pixel; cleared at dot 1 of the pre-render line.  Used for raster timing.
 		ppuStatus.addFlag("Vertical Blank", "V", 0x80); //Vertical blank has started (0: not in vblank; 1: in vblank).
+		*/
+
 	}
 
 
@@ -291,11 +306,11 @@ public class PPU extends BusDevice implements Tickable {
 		//https://www.nesdev.org/wiki/PPU_registers#:~:text=OAMADDR%20is%20set%20to%200%20during%20each%20of%20ticks%20257%2D320
 		if(scanlineCycle == 1) {
 			//Clear sprite 0 hit flag
-			ppuStatus.setFlag("S", false);
+			ppuStatus.setFlag(STATUS_S, false);
 			//Clear V Blank flag
-			ppuStatus.setFlag("V", false);
+			ppuStatus.setFlag(STATUS_V, false);
 			//Clear sprite
-			ppuStatus.setFlag("O", false);
+			ppuStatus.setFlag(STATUS_O, false);
 		} else if(scanlineCycle >= 257 && scanlineCycle <= 320) {
 			oamAddr.set(0x00);
 		}
@@ -303,7 +318,7 @@ public class PPU extends BusDevice implements Tickable {
 		if(scanlineCycle == 304) {
 			midFrameChanges.clear();
 
-			if(ppuMask.isSet("b") || ppuMask.isSet("s")) {
+			if(ppuMask.isSet(MASK_BG) || ppuMask.isSet(MASK_SP)) {
 				//Copy vertical scrolling related bits from t to v
 				//v: GHIA.BC DEF..... <- t: GHIA.BC DEF.....
 
@@ -354,7 +369,7 @@ public class PPU extends BusDevice implements Tickable {
 		if(scanline == sprite0HitScanline && scanlineCycle == sprite0HitScanlineCycle) {
 			//System.out.println("Scanline:" + sprite0HitScanline);
 			//System.out.println("Cycle:" + sprite0HitScanlineCycle);
-			ppuStatus.setFlag("S", true);
+			ppuStatus.setFlag(STATUS_S, true);
 		}
 
 
@@ -418,7 +433,7 @@ public class PPU extends BusDevice implements Tickable {
 
 			ppuStatus.set(val);
 
-			if(ppuCtrl.isSet("V")) {
+			if(ppuCtrl.isSet(CTRL_V)) {
 				//Fixed: This shouldn't be allowed to stop the cpu during executing an instruction, it should wait until it is finished
 				//Due to the current implementation, this might work fine. Instruction are executed whole and the the cpu idle cycles until the correct amount
 				//of cycles for each instruction has passed. The only side effect of doing it this way is that the nmi may be called earlier than intended during the cpu's
@@ -451,7 +466,7 @@ public class PPU extends BusDevice implements Tickable {
 					continue;
 				}
 				//If the sprite is on the scanline but secondaryOAM is full, set sprite overflow flag
-				ppuStatus.setFlag("O", true);
+				ppuStatus.setFlag(STATUS_O, true);
 
 			} else if((sOAMpointer & 0x20) > 0) {
 				//If a sprite is not on the scanline and secondaryOAM is full, do this hardware bug
@@ -519,8 +534,8 @@ public class PPU extends BusDevice implements Tickable {
 			boolean flipH = (attr & 0x40) > 0;
 			boolean flipV = (attr & 0x80) > 0; //Also swaps tiles in 8x16 mode
 
- 			byte[] bitPlane0 = getPatternEntry(ppuCtrl.isSet("S") ? 1 : 0, chrInd, 0);
-			byte[] bitPlane1 = getPatternEntry(ppuCtrl.isSet("S") ? 1 : 0, chrInd, 1);
+ 			byte[] bitPlane0 = getPatternEntry(ppuCtrl.isSet(CTRL_S) ? 1 : 0, chrInd, 0);
+			byte[] bitPlane1 = getPatternEntry(ppuCtrl.isSet(CTRL_S) ? 1 : 0, chrInd, 1);
 
 			for(int spriteY = 0; spriteY < 8; spriteY++) {
 				for(int spriteX = 0; spriteX < 8; spriteX++) {
@@ -579,7 +594,8 @@ public class PPU extends BusDevice implements Tickable {
 			int x = i & 0xFF;
 			int y = (i & 0xFF00) >>> 8;
 
-			output.setRGB(x, y, rgbOut);
+			output.getRaster().getDataBuffer().setElem(i, rgbOut);
+			//output.setRGB(x, y, rgbOut);
 		}
 	}
 
@@ -591,7 +607,12 @@ public class PPU extends BusDevice implements Tickable {
 		//-The current base name table selected through PPUCTRL
 		//-The scroll position supplied through PPUSCROLL
 
-		if(!ppuMask.isSet("b")) {
+		//TODO: The mapper might change banks during rendering, which would change the pattern table.
+		//      The way I'm doing it now the state of the mapper will be always be how it was at the end of the frame
+		//      Possible workaround is saving the whole visible CHR ROM in a buffer and using that instead of reading from the mapper
+		//      That would be incredibly stupid and I really need to redo the whole PPU
+
+		if(!ppuMask.isSet(MASK_BG)) {
 			outputBuffer = new byte[SCREEN_WIDTH * SCREEN_HEIGHT];
 			return;
 		}
@@ -616,8 +637,8 @@ public class PPU extends BusDevice implements Tickable {
 
 		for(int y = 0; y < SCREEN_HEIGHT; y++) {
 			chrIndex = ppuRead(0x2000| address);
-			bitplane0 = getPatternEntry(renderState.ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 0);
-			bitplane1 = getPatternEntry(renderState.ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 1);
+			bitplane0 = getPatternEntry(renderState.ppuCtrl.isSet(CTRL_B) ? 1 : 0, chrIndex, 0);
+			bitplane1 = getPatternEntry(renderState.ppuCtrl.isSet(CTRL_B) ? 1 : 0, chrIndex, 1);
 
 
 			rowBits0 = bitplane0[fineY] << 8;
@@ -659,8 +680,8 @@ public class PPU extends BusDevice implements Tickable {
 					}
 
 					chrIndex = ppuRead(0x2000 | address);
-					bitplane0 = getPatternEntry(renderState.ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 0);
-					bitplane1 = getPatternEntry(renderState.ppuCtrl.isSet("B") ? 1 : 0, chrIndex, 1);
+					bitplane0 = getPatternEntry(renderState.ppuCtrl.isSet(CTRL_B) ? 1 : 0, chrIndex, 0);
+					bitplane1 = getPatternEntry(renderState.ppuCtrl.isSet(CTRL_B) ? 1 : 0, chrIndex, 1);
 
 
 
@@ -781,7 +802,7 @@ public class PPU extends BusDevice implements Tickable {
 
 			int chrIndex = ppuRead((0x2000 | (vAddr.get() & 0xC00)) + nameT);
 
-			int halfSelect = ppuCtrl.isSet("B") ? 0x1000 : 0;
+			int halfSelect = ppuCtrl.isSet(CTRL_B) ? 0x1000 : 0;
 
 
 			byte[] chrPlane0 = getPatternEntry(halfSelect, chrIndex, 0);
@@ -935,7 +956,7 @@ public class PPU extends BusDevice implements Tickable {
 				}
 
 				//Increment PPU address depending on PPUCTRL flag
-				vAddr.set(vAddr.get() + ((ppuCtrl.isSet("I")) ? 32 : 1));
+				vAddr.set(vAddr.get() + ((ppuCtrl.isSet(CTRL_I)) ? 32 : 1));
 
 				return val;
 
@@ -1054,7 +1075,7 @@ public class PPU extends BusDevice implements Tickable {
 
 			case PPUDATA:
 				ppuWrite(vAddr.get(), data);
-				vAddr.set(vAddr.get() + ((ppuCtrl.getFlag("I") > 0) ? 32 : 1));
+				vAddr.set(vAddr.get() + ((ppuCtrl.getFlag(CTRL_I) > 0) ? 32 : 1));
 				break;
 
 			case OAMADDR:
@@ -1080,12 +1101,7 @@ public class PPU extends BusDevice implements Tickable {
 	}
 
 	public void connectCartridge(Cartridge cartridge) {
-		if(this.cartridge != null) {
-			this.ppuBus.removeBusDevice(this.cartridge);
-		}
-
 		this.cartridge = cartridge;
-		ppuBus.addBusDevice(cartridge);
 		ppuBus.cart = cartridge;
 	}
 }

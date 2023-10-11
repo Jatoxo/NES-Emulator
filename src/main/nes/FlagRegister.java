@@ -10,49 +10,22 @@ public class FlagRegister extends Register {
 	public FlagRegister(int initialValue, BitSize size, String name, String shortName, int address) {
 		super(initialValue, size, name, shortName, address);
 
-		flagsSymbol = new HashMap<>();
-		flagsName = new HashMap<>();
-	}
-
-	private final HashMap<String, Integer> flagsSymbol;
-	private final HashMap<String, Integer> flagsName;
-
-	public void addFlag(String name, String symbol, int bitMask) {
-		flagsSymbol.put(symbol, bitMask);
-		flagsName.put(name, bitMask);
 	}
 
 
-	public int getFlagN(String flagName) {
-		return value & flagsSymbol.get(flagName);
+	public boolean isSet(int bitMask) {
+		return (value & bitMask) > 0;
 	}
-	public int getFlag(String symbol) {
-		return value & flagsSymbol.get(symbol);
-	}
+
 	public int getFlag(int bitMask) {
-		return value & bitMask;
+		return (value & bitMask);
 	}
 
-	public boolean isSet(String symbol) {
-		int mask = flagsSymbol.get(symbol);
-		return (value & mask) > 0;
-	}
-	public void setFlag(String symbol, boolean val) {
-		int mask = flagsSymbol.get(symbol);
+	public void setFlag(int bitMask, boolean val) {
 		if(val) {
-			value |= mask;
+			value |= bitMask;
 		} else {
-			value &= ~mask;
+			value &= ~bitMask;
 		}
-	}
-
-
-
-	public void copyFlags(FlagRegister reg) {
-		flagsName.clear();
-		flagsSymbol.clear();
-
-		flagsSymbol.putAll(reg.flagsSymbol);
-		flagsName.putAll(reg.flagsName);
 	}
 }
