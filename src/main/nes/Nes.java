@@ -71,7 +71,7 @@ public class Nes {
 
 		//insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
 
-
+		//MM 2869
 		//Cartridge cart = RomParser.parseRom("D:\\GamesSoftware\\ZZ Emulators\\NES\\Games\\Test\\apu_test.nes");
 		Cartridge cart = RomParser.parseRom("D:\\GamesSoftware\\ZZ Emulators\\NES\\Games\\mbr.nes");
 		//Cartridge cart = RomParser.parseRom("D:\\GamesSoftware\\ZZ Emulators\\NES\\Games\\NESroms\\USA\\Legend of Zelda, The (U) (PRG 0).nes");
@@ -88,7 +88,7 @@ public class Nes {
 			long lastTime = System.nanoTime();
 
 			advanceFrame();
-
+			
 			//Todo this isn't accurate at all
 			while(limitSpeed && System.nanoTime() - lastTime < 16666666);
 		}

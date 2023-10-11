@@ -112,7 +112,6 @@ public class Jtx6502 implements Tickable {
 	}
 
 	public void raiseIRQ() {
-
 		System.out.println("IRQ raised");
 		//TODO: This needs work. Interrupt is level sensitive, so someone might call this function but only afterwards
 		//the inhibit flag gets cleared. In that case an interrupt still needs to be triggered.
@@ -161,18 +160,11 @@ public class Jtx6502 implements Tickable {
 			//logCpuState();
 
 
+
+
+
 			cycles = currentInstruction.cycles;
 
-			/*
-			String correct = "a";//inst.get(index);
-			if(!currentInstruction.mnemonic.equals(correct)) {
-				System.out.println("fucky wucky uwu");
-				String uwu = "fucky wucky";
-			}
-			switch(index) {
-				case 3377:
-					System.out.println("BREAKKK");
-			}*/
 
 			executeInstruction(currentInstruction);
 			//index++;
