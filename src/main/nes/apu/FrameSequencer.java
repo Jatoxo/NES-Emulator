@@ -10,7 +10,10 @@ public class FrameSequencer extends Sequencer implements Tickable {
     public static final int LENGTH_SWEEPS = 1;
     public static final int ENVELOPES = 2;
 
-    public final Divider divider = new Divider(89489);
+    private int divider = 89489;
+
+    //public final Divider divider = new Divider(89489);
+
     /**
      * Just a Sequencer configured with sequences for the APU frame sequencer and a divider
      * Add listeners using the enums for the index
@@ -30,14 +33,21 @@ public class FrameSequencer extends Sequencer implements Tickable {
         mode1.addSequence(true , true , true , true);
     }
 
+    public void reset() {
+        super.reset();
+        divider = 89489;
+    }
+
 
     /**
      * Ticked every master clock cycle
      */
     @Override
     public void tick() {
-        if(divider.tick())
+        if(divider-- == 0) {
+            divider = 89489;
             advance();
+        }
     }
 
 }
