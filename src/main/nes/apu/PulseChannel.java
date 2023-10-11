@@ -18,7 +18,7 @@ public class PulseChannel {
     Envelope envelope = new Envelope();
 
     //Determines the duty cycle of the channel
-    Sequencer dutySequencer = new Sequencer();
+    PulseSequencer dutySequencer = new PulseSequencer();
 
     //Counts down and silences the channel when it reaches 0
     LengthCounter lengthCounter = new LengthCounter();
@@ -40,6 +40,7 @@ public class PulseChannel {
         frameSequencer.addListener(FrameSequencer.LENGTH_SWEEPS, sweep);
 
         //Pulse channel has 4 different sequences
+        /*
         dutySequencer.addSet(8);
         dutySequencer.addSet(8);
         dutySequencer.addSet(8);
@@ -49,6 +50,8 @@ public class PulseChannel {
         dutySequencer.getSet(1).addSequence(false, true, true);
         dutySequencer.getSet(2).addSequence(false, true, true, true, true);
         dutySequencer.getSet(3).addSequence(true, false, false, true, true, true, true, true);
+
+         */
     }
 
 
@@ -72,7 +75,7 @@ public class PulseChannel {
      */
     public int getVolume() {
 
-        if(!dutySequencer.getCurrentValue(0)) {
+        if(!dutySequencer.getCurrentValue()) {
             return 0;
         }
 
