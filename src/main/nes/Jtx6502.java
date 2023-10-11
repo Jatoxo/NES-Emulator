@@ -186,6 +186,7 @@ public class Jtx6502 implements Tickable {
 			case Instruction.EOR:
 			case Instruction.LDA:
 			case Instruction.LDY:
+			case Instruction.LDX:
 			case Instruction.ORA:
 			case Instruction.SBC:
 				if(pageCrossed) {
@@ -312,7 +313,7 @@ public class Jtx6502 implements Tickable {
 				s.decrement();
 
 				setFlag(I, true); //Set I flag (After pushing status?)
-				pc.set( (read(0xFFE)) | (read(0xFFFF) << 8));
+				pc.set( (read(0xFFFE)) | (read(0xFFFF) << 8));
 				break;
 
 			case BVC:
@@ -436,6 +437,11 @@ public class Jtx6502 implements Tickable {
 				write(0x0100 + s.get(), i & 0xFF);
 				s.decrement();
 
+				//Stack could have written to the high byte of the absolute address, so read it again (hack)
+				int hiPC = read(pc.get() - 1, true) & 0xFF;
+				address &= 0x00FF;
+				address |= hiPC << 8;
+
 				pc.set(address);
 				break;
 
@@ -522,7 +528,7 @@ public class Jtx6502 implements Tickable {
 			case PLP:
 				s.increment();
 				i = read(0x100 + s.get());
-
+				i &= 0xEF; //Mask out B Flag
 				status = i | U;
 				break;
 
@@ -561,6 +567,7 @@ public class Jtx6502 implements Tickable {
 			case RTI:
 				s.increment();
 				status = (read(0x100 + s.increment()) & 0xFF) & 0xEF; //Mask out B Flag
+				status |= U; //Set U Flag
 
 				int pcl = read(0x100 + s.increment()) & 0xFF;
 				int pch = read(0x100 + s.get()) & 0xFF;
@@ -728,13 +735,13 @@ public class Jtx6502 implements Tickable {
 				i = read(pc.increment()); //Get an address to the first byte of address in Zero Page
 				i = read(i) | (read((i + 1) & 0xFF) << 8); //read the full address in zero page
 
-				i = (i + y.get()) & 0xFFFF; //Add y to the address
+				int addre = (i + y.get()) & 0xFFFF; //Add y to the address
 
-				if((i & 0xFF00) != 0x0000) { //If a page cross occurred (if we left zero page) an additional clock cycle will happen
+				if((i & 0xFF00) != (addre & 0xFF00)) { //If a page cross occurred an additional clock cycle will happen
 					pageCrossed = true;
 				}
 
-				return i;
+				return addre;
 
 			case ADDR_IND:
 				i = read(pc.increment()) | (read(pc.increment()) << 8); //Address (pointer) to another address
@@ -779,6 +786,7 @@ public class Jtx6502 implements Tickable {
 
 		// If interrupts are allowed
 		if(getFlag(I) == 0) {
+			System.out.println("--------------   IRQ      ----------------------");
 
 			write(0x0100 + s.get(), (pc.get() >> 8) & 0x00FF);
 			s.decrement();
@@ -862,7 +870,7 @@ public class Jtx6502 implements Tickable {
 	}
 
 	public int read(int addr, boolean bReadOnly) {
-		return bus.read(addr, bReadOnly) & 0xFF;
+		return bus.read(addr & 0xFFFF, bReadOnly) & 0xFF;
 	}
 	public int read(int addr) {
 		return read(addr, false) & 0xFF;
