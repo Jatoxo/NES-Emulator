@@ -1,7 +1,6 @@
 package main.nes.apu;
 
 import main.nes.BusDevice;
-import main.nes.Clock;
 import main.nes.Nes;
 import main.nes.Tickable;
 
@@ -17,7 +16,7 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
 
 
 
-    private Nes nes;
+    private final Nes nes;
 
 
     //Whether interrupts are generated
@@ -63,6 +62,7 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
         //For now just call the function as much as possible when needed lol
         if(triggerInterrupt) {
             nes.cpu.raiseIRQ();
+            triggerInterrupt = false;
         }
 
         pulse1.clockTimer();
@@ -80,34 +80,33 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
     @Override
     public int read(int addr) {
 
-        switch(addr) {
-            case 0x4015:
-                int result = 0;
+        if(addr == 0x4015) {
+            int result = 0;
 
-                if(triggerInterrupt) {
-                    result |= 0b0100_0000;
-                }
-                triggerInterrupt = false;
+            if (triggerInterrupt) {
+                result |= 0b0100_0000;
+            }
+            triggerInterrupt = false;
 
-                boolean pulse1enabled = pulse1.lengthCounter.getCount() > 0;
-                boolean pulse2enabled = pulse1.lengthCounter.getCount() > 0;
-                boolean triangleEnabled = triangle.lengthCounter.getCount() > 0;
-                boolean noiseEnabled = noise.lengthCounter.getCount() > 0;
+            boolean pulse1enabled = pulse1.lengthCounter.getCount() > 0;
+            boolean pulse2enabled = pulse1.lengthCounter.getCount() > 0;
+            boolean triangleEnabled = triangle.lengthCounter.getCount() > 0;
+            boolean noiseEnabled = noise.lengthCounter.getCount() > 0;
 
-                if(pulse1enabled) {
-                    result |= 0b0000_0001;
-                }
-                if(pulse2enabled) {
-                    result |= 0b0000_0010;
-                }
-                if(triangleEnabled) {
-                    result |= 0b0000_0100;
-                }
-                if(noiseEnabled) {
-                    result |= 0b0000_1000;
-                }
+            if (pulse1enabled) {
+                result |= 0b0000_0001;
+            }
+            if (pulse2enabled) {
+                result |= 0b0000_0010;
+            }
+            if (triangleEnabled) {
+                result |= 0b0000_0100;
+            }
+            if (noiseEnabled) {
+                result |= 0b0000_1000;
+            }
 
-                return result;
+            return result;
         }
         return 0;
     }
@@ -335,11 +334,6 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
 
     }
 
-    //This is just here to make the frameSequencer not public, but it needs
-    //to listen to the master clock
-    public void setSequencerClock(Clock clock) {
-        clock.addListener(frameSequencer);
-    }
 
     //Hooked up to the IRQ signal
     @Override

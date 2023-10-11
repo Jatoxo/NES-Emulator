@@ -4,11 +4,9 @@ import java.util.*;
 
 public class Clock {
 
-	public static final long NTSC_MASTER_CLOCK_SPEED = 21477272;
-
 	private static class Listener {
-		private Tickable tickable;
-		private int divisor;
+		private final Tickable tickable;
+		private final int divisor;
 		private int step;
 		private long cycles;
 
@@ -29,20 +27,14 @@ public class Clock {
 		}
 	}
 
-
-	private boolean active;
 	private long cycles;
-
-	private long tickSpeed;
 
 	public volatile boolean doTicks;
 
 	ArrayList<Listener> listeners;
 
 
-	Clock(long frequency, Tickable... listeners) {
-		active = false;
-		this.tickSpeed = frequency;
+	Clock(Tickable... listeners) {
 		this.listeners = new ArrayList<>();
 
 		for(Tickable listener : listeners) {
@@ -78,22 +70,8 @@ public class Clock {
 		cycles++;
 	}
 
-	public void start() {
-		active = true;
-
-		while(active) {
-			tick();
-			cycles++;
-		}
-
-	}
-
-	public void stop() {
-		active = false;
-	}
 
 	public void reset() {
-		active = false;
 		cycles = 0;
 	}
 }

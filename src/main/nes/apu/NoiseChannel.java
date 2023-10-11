@@ -1,9 +1,7 @@
 package main.nes.apu;
 
 public class NoiseChannel {
-    private Divider timerDivider = new Divider(0);
-
-    private FrameSequencer frameSequencer;
+    private final Divider timerDivider = new Divider(0);
 
     LengthCounter lengthCounter = new LengthCounter();
 
@@ -21,7 +19,6 @@ public class NoiseChannel {
     };
 
     public NoiseChannel(FrameSequencer frameSequencer) {
-        this.frameSequencer = frameSequencer;
 
         frameSequencer.addListener(FrameSequencer.ENVELOPES, envelope);
         frameSequencer.addListener(FrameSequencer.LENGTH_SWEEPS, lengthCounter);

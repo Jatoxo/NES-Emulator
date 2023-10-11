@@ -9,7 +9,6 @@ import org.json.simple.parser.ParseException;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.util.Arrays;
 
 
 public class CPUTest {

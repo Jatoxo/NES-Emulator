@@ -1,9 +1,6 @@
 package main.nes;
 
-import java.util.Dictionary;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 
 public class FlagRegister extends Register {
 
@@ -17,8 +14,8 @@ public class FlagRegister extends Register {
 		flagsName = new HashMap<>();
 	}
 
-	private HashMap<String, Integer> flagsSymbol;
-	private HashMap<String, Integer> flagsName;
+	private final HashMap<String, Integer> flagsSymbol;
+	private final HashMap<String, Integer> flagsName;
 
 	public void addFlag(String name, String symbol, int bitMask) {
 		flagsSymbol.put(symbol, bitMask);
@@ -39,7 +36,7 @@ public class FlagRegister extends Register {
 	public boolean isSet(String symbol) {
 		int mask = flagsSymbol.get(symbol);
 		return (value & mask) > 0;
-	};
+	}
 	public void setFlag(String symbol, boolean val) {
 		int mask = flagsSymbol.get(symbol);
 		if(val) {

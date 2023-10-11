@@ -4,17 +4,16 @@ import main.nes.Tickable;
 import main.nes.apu.APU;
 
 import javax.sound.sampled.*;
-import javax.swing.*;
 
 public class Audio implements Tickable {
 
 
-    private APU apu;
+    private final APU apu;
 
     public static final int BUFFER_SIZE = 44100 / 6 ;
 
 
-    private byte[] buffer = new byte[BUFFER_SIZE];
+    private final byte[] buffer = new byte[BUFFER_SIZE];
 
     int bufferIndex = 0;
 
@@ -76,7 +75,7 @@ public class Audio implements Tickable {
         double audioValue = apu.audioValue;
 
 
-        int sampleValue = 0;
+        int sampleValue;
 
 
         sampleValue = (int) (audioValue * 0x7FFF);

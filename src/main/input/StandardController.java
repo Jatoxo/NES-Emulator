@@ -34,7 +34,7 @@ public class StandardController implements Controller{
 
 	@Override
 	public void poll() {
-		//The button state at the LSB will be read first (The A button)
+		//The button state at the LSB will be read first (The "A" button)
 		//0 - A, 1 - B, 2 - Select, 3 - Start, 4 - UP, 5 - Down, 6 - Left, 7 - Right
 		buttonState &= ~0xFF;
 		buttonState |= (

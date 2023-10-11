@@ -25,13 +25,13 @@ import javax.sound.sampled.*;
 public class GUI extends JFrame implements DropTargetListener {
 
 
-	Color palette[] = Palette.defaultPalette().colors;
+	Color[] palette = Palette.defaultPalette().colors;
 
-	private Dimension screenSize = new Dimension(256, 240);
+	private final Dimension screenSize = new Dimension(256, 240);
 
 	public BufferedImage img;
 
-	private JLabel render;
+	private final JLabel render;
 
 	private final Nes nes;
 
@@ -152,61 +152,8 @@ public class GUI extends JFrame implements DropTargetListener {
 
 
 		this.nes = new Nes(this);
-
-		//Thread audioThread = getAudioThread();
-		//audioThread.start();
 	}
 
-	private Thread getAudioThread() {
-		return new Thread(() -> {
-			AudioFormat format = new AudioFormat(
-					44100 * 4,
-					16,//bit
-					1,//channel
-					true,//signed
-					false //little endian
-			);
-
-			SourceDataLine line = null;
-			try {
-				line = AudioSystem.getSourceDataLine(format);
-			} catch (LineUnavailableException e) {
-				throw new RuntimeException(e);
-			}
-			try {
-				line.open();
-			} catch (LineUnavailableException e) {
-				throw new RuntimeException(e);
-			}
-
-			line.start();
-			try {
-				Thread.sleep(800);
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
-
-			while(true) {
-
-
-				double volume = nes.apu.audioValue;
-				//System.out.println(volume);
-
-				int sampleValue = (int) (volume * 0x7FF) * 2;
-
-				byte low = (byte) (sampleValue & 0xFF);
-				byte high = (byte) ((sampleValue & 0x7F00) >>> 8);
-
-				//while(line.available() == 0);
-				line.write(new byte[]{low, high}, 0, 2);
-
-
-
-
-			}
-		});
-
-	}
 
 	private Thread getFPSThread() {
 		JFrame f = this;
@@ -268,7 +215,7 @@ public class GUI extends JFrame implements DropTargetListener {
 
 		new DropTarget(this, this);
 
-		//Theres 9129012 different ways of doing this but this worky
+		//There's 9129012 different ways of doing this but this worky
 		setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/Nes_controller_square.png")));
 
 		GraphicsDevice gd = getGraphicsConfiguration().getDevice();
@@ -284,10 +231,6 @@ public class GUI extends JFrame implements DropTargetListener {
 
 	}
 
-	public void recock() {
-		repaint();
-	}
-
 	@Override
 	public void repaint() {
 		super.repaint();
@@ -301,8 +244,6 @@ public class GUI extends JFrame implements DropTargetListener {
 			}
 		}
 		 */
-
-
 
 
 		//Image newImg = img.getScaledInstance(render.getWidth(), render.getHeight(), Image.SCALE_DEFAULT);

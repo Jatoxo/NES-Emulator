@@ -5,7 +5,7 @@ import java.util.ArrayList;
 public class PPUBus {
 	ArrayList<PPUBusDevice> busDevices;
 
-	private CIRAM vram;
+	private final CIRAM vram;
 	public Cartridge cart;
 
 	public PPUBus(CIRAM vram) {

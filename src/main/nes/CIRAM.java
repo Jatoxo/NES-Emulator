@@ -4,7 +4,7 @@ import main.nes.mappers.Mapper;
 
 public class CIRAM implements PPUBusDevice {
 	private final int CIRAM_SIZE = 1<<11;
-	private Nes nes;
+	private final Nes nes;
 
 	private byte[] fakeCiram = new byte[CIRAM_SIZE];
 

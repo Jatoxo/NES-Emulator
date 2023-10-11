@@ -1,7 +1,7 @@
 package main.nes;
 
 public class Register {
-	enum BitSize {
+	public enum BitSize {
 		BITS_4,
 		BITS_8,
 		BITS_16
@@ -17,7 +17,7 @@ public class Register {
 
 	int address;
 
-	private int mask ;
+	private final int mask ;
 
 	public Register(int initialValue, BitSize size, String name, String shortName) {
 		this(initialValue, size, name, shortName, 0);

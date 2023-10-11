@@ -1,10 +1,5 @@
 package main.nes;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Locale;
 
 import static main.nes.Instruction.*;
 
@@ -25,10 +20,7 @@ public class Jtx6502 implements Tickable {
 
 
 
-	Nes nes;
-
 	public Bus bus;
-	Clock clock;
 
 	//Status register mask bits
 	final static int C = (1 << 0); //CARRY
@@ -53,8 +45,6 @@ public class Jtx6502 implements Tickable {
 
 
 
-	int addr_abs = 0x0000;
-	int addr_rel = 0x00;
 	int opcode = 0x00;
 	public int cycles = 0;
 
@@ -64,11 +54,6 @@ public class Jtx6502 implements Tickable {
 
 
 	Instruction currentInstruction;
-	/*
-	ArrayList<String> inst = new ArrayList<>();
-	String[] mn = {"ADC","AND","ASL","BCC","BCS","BEQ","BIT","BMI","BNE","BPL","BRK","BVC","BVS","CLC","CLD","CLI","CLV","CMP","CPX","CPY","DEC","DEX","DEY","EOR","INC","INX","INY","JMP","JSR","LDA","LDX","LDY","LSR","NOP","ORA","PHA","PHP","PLA","PLP","ROL","ROR","RTI","RTS","SBC","SEC","SED","SEI","STA","STX","STY","TAX","TAY","TSX","TXA","TXS","TYA"};
-	int index = 0;
-	 */
 
 	private boolean raiseNMI = false;
 	private boolean raiseIRQ = false;
@@ -77,7 +62,7 @@ public class Jtx6502 implements Tickable {
 	public Jtx6502() {
 		this.bus = new Bus();
 
-		/**
+		/*
 		statusF.addFlag("Carry", "C", C);
 		statusF.addFlag("Zero", "Z", Z);
 		statusF.addFlag("IRQ Disable", "I", I);
@@ -86,24 +71,6 @@ public class Jtx6502 implements Tickable {
 		statusF.addFlag("Overflow", "V", V);
 		statusF.addFlag("Negative", "N", N);
 		*/
-		/*
-		BufferedReader reader;
-		try {
-			reader = new BufferedReader(new FileReader("D:\\Users\\Jatoxo\\Downloads\\nestest.log.txt"));
-			String line = reader.readLine();
-			while (line != null) {
-				for(String m : mn) {
-					if(line.contains(" " + m + " ")) {
-						inst.add(m);
-					}
-				}
-
-				line = reader.readLine();
-			}
-			reader.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}*/
 
 	}
 
@@ -114,7 +81,7 @@ public class Jtx6502 implements Tickable {
 	public void raiseIRQ() {
 		System.out.println("IRQ raised");
 		//TODO: This needs work. Interrupt is level sensitive, so someone might call this function but only afterwards
-		//the inhibit flag gets cleared. In that case an interrupt still needs to be triggered.
+		// the inhibit flag gets cleared. In that case an interrupt still needs to be triggered.
 		raiseIRQ = true;
 
 
@@ -756,12 +723,6 @@ public class Jtx6502 implements Tickable {
 
 	public void reset() {
 		//Set Program counter to FFFC-FFFD
-		//int lo = read(0XFFFC);
-		//int hi = read(0XFFFC + 1);
-		//int hib =  hi;
-		//int partial = (short) (hi << 8);
-		//int full = (short) (partial | lo);
-
 
 		pc.set(read(0XFFFC) | (read(0xFFFC + 1) << 8));
 		//pc.set(0x0C000); //To get nestest to work without ppu
@@ -773,7 +734,7 @@ public class Jtx6502 implements Tickable {
 
 		s.set(0xFD); //The stack starts here idk why it just does
 
-		setFlag(U, U > 0);
+		setFlag(U, true);
 		setFlag(I, true);
 
 		totalCycles = 0;
@@ -829,11 +790,6 @@ public class Jtx6502 implements Tickable {
 	}
 
 
-	public int fetch() {
-		return 0;
-	}
-
-
 
 	int getFlag(int flagBitMask) {
 		return status & flagBitMask;
@@ -851,7 +807,7 @@ public class Jtx6502 implements Tickable {
 		addr &= 0xFFFF;
 		data &= 0xFF;
 
-		//OAM memory DMA transfer
+		//OAM memory DMA transfer.
 		//Transfer 256 bytes from 0xDD00 until 0xDDFF to fill the OAM of the PPU
 		if(addr == 0x4014) {
 			//Odd cpu cycle results in extra idle cycle

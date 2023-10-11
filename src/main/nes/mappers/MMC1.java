@@ -1,10 +1,6 @@
 package main.nes.mappers;
 
 
-import main.nes.FlagRegister;
-import main.nes.Register;
-import main.nes.Register.*;
-
 public class MMC1 extends Mapper {
     //https://www.nesdev.org/wiki/MMC1
 

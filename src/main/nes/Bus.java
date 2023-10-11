@@ -1,9 +1,7 @@
 package main.nes;
 
-import main.nes.Jtx6502;
-
 import java.util.ArrayList;
-import java.util.Arrays;
+
 
 public class Bus {
 

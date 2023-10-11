@@ -22,7 +22,7 @@ public class Nes {
 	public Jtx6502 cpu;
 	public PPU ppu;
 	public APU apu;
-	private MasterClock clock;
+	private final MasterClock clock;
 	public ControllerPorts controllerPorts;
 	public GUI gui;
 

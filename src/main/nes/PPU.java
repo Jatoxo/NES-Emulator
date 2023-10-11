@@ -38,14 +38,13 @@ public class PPU extends BusDevice implements Tickable {
 	public static final int PALLETE_RAM_INDEX_END = 0x3FFF;
 
 	private Cartridge cartridge;
-	private PPUBus ppuBus;
+	private final PPUBus ppuBus;
 	private byte[] palleteRam;
 	private byte[] OAM;
 	private byte[] secondaryOAM;
 
-	private CIRAM ciram;
+	private final CIRAM ciram;
 
-	long time = 0;
 
 
 	public static final int PPUCTRL = 0x2000;

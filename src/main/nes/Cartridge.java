@@ -1,16 +1,7 @@
 package main.nes;
 
 import main.nes.mappers.Mapper;
-import main.nes.mappers.NROM;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-
-import static main.nes.mappers.Mapper.*;
 
 public class Cartridge extends BusDevice implements PPUBusDevice{
 	//Count of 16kb chunks of PRG ROM
@@ -20,13 +11,13 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 	int chrRomChunks;
 
 	//Mapper used by this cartridge
-	private Mapper mapper;
+	private final Mapper mapper;
 
 	//Whether the cartridge contains battery-backed PRG RAM ($6000-7FFF) or other persistent memory
-	private boolean batteryBackedRam;
+	private final boolean batteryBackedRam;
 
 	//Whether the cartridge contains a 512-byte trainer at $7000-$71FF (stored before PRG data)
-	private boolean trainer;
+	private final boolean trainer;
 
 	/**
 	 * Creates a new Cartridge object
@@ -64,6 +55,8 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 	/**
 	 * Returns whether the cartridge contains a 512-byte trainer at $7000-$71FF (stored before PRG data)
 	 */
+	//TODO: This is not part of the cartridge but part of the ROM
+	// Remove this from here (past me is lazy so I'll leave it to you)
 	public boolean hasTrainer() {
 		return trainer;
 	}
@@ -80,8 +73,7 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 
 	@Override
 	public int read(int addr) {
-		byte thing = (byte) mapper.cpuRead(addr & 0xFFFF);
-		return thing;
+        return (byte) mapper.cpuRead(addr & 0xFFFF);
 	}
 
 	@Override

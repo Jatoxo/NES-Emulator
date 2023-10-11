@@ -5,9 +5,6 @@ public class TriangleChannel {
     //Configured by 0x400A and 0x400B
     Divider timerDivider = new Divider(0);
 
-    //The APU frame sequencer
-    private FrameSequencer frameSequencer;
-
     //The linear counter
     LinearCounter linearCounter = new LinearCounter();
 
@@ -22,7 +19,7 @@ public class TriangleChannel {
 
 
     public TriangleChannel(FrameSequencer frameSequencer) {
-        this.frameSequencer = frameSequencer;
+        //The APU frame sequencer
 
         frameSequencer.addListener(FrameSequencer.LENGTH_SWEEPS, lengthCounter);
         //Linear counter gets clocked the same as envelopes
@@ -40,8 +37,7 @@ public class TriangleChannel {
     }
 
     /**
-     * Ticks the triangle channel's timer
-     *
+     * Ticks the triangle channel's timer.
      * should be called every CPU cycle
      */
     public void clockTimer() {
