@@ -3,24 +3,14 @@ package main.nes;
 import java.util.ArrayList;
 
 public class PPUBus {
-	ArrayList<PPUBusDevice> busDevices;
 
 	private final CIRAM vram;
 	public Cartridge cart;
 
 	public PPUBus(CIRAM vram) {
 		this.vram = vram;
-		busDevices = new ArrayList<>();
-
-
 	}
 
-	public void addBusDevice(PPUBusDevice ppuBusDevice) {
-		busDevices.add(ppuBusDevice);
-	}
-	public void removeBusDevice(PPUBusDevice device) {
-		busDevices.remove(device);
-	}
 
 	public void write(int addr, int data) { //16-Bit address, 8-Bit Data
 		addr &= 0x3FFF; //PPU Bus has 13 address lanes
