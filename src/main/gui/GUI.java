@@ -82,6 +82,8 @@ public class GUI extends JFrame implements DropTargetListener {
 				switch(e.getKeyCode()) {
 					case KeyEvent.VK_TAB:
 						nes.limitSpeed = false;
+
+						break;
 					case KeyEvent.VK_W:
 						controller.dpadUp = true;
 						break;
@@ -115,6 +117,7 @@ public class GUI extends JFrame implements DropTargetListener {
 				switch(e.getKeyCode()) {
 					case KeyEvent.VK_TAB:
 						nes.limitSpeed = true;
+						break;
 					case KeyEvent.VK_W:
 						controller.dpadUp = false;
 						break;
