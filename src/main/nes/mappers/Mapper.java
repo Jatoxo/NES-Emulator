@@ -33,4 +33,16 @@ public abstract class Mapper {
 
 	//whether the CHR memory of the cart is enabled when accessing this address
 	public abstract boolean isChrRomEnabled(int address);
+
+	/**
+	 * If this cartridge contains PRG RAM, returns the current contents of it
+	 * If there are multiple banks, all banks are returned starting with the lowest.
+	 * @return The PGR RAM, or an empty array if non is present
+	 */
+	public byte[] getProgramRAM() {
+		//By default, return empty array since not all boards have prg ram
+		return new byte[0];
+	}
+
+	public void setProgramRAM(byte[] newProgramRam) {}
 }

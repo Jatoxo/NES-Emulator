@@ -17,12 +17,14 @@ public class RomParser {
      */
     public static Cartridge parseRom(String romPath) throws IOException, UnsupportedRomException {
 
+        File romFile = new File(romPath);
+
         //Load the ROM file into a byte array
         //Rom files are usually very small (<1mb) so this is probably fine
-        byte[] romFile = Files.readAllBytes(Path.of(romPath));
+        byte[] romData = Files.readAllBytes(romFile.toPath());
 
         //Determine the file format
-        ROM rom = getParser(romFile);
+        ROM rom = getParser(romData, romFile.getName());
 
         //If the file format is unknown, throw an exception
         if(rom == null) {
@@ -38,11 +40,11 @@ public class RomParser {
      * @param romFile The bytes of the ROM file
      * @return The correct Parser, or null if no parser is found
      */
-    static ROM getParser(byte[] romFile) {
+    static ROM getParser(byte[] romFile, String fileName) {
 
         //Check for iNES file format (Beginning with "NES" followed by 0x1A)
         if(romFile[0] == 0x4E && romFile[1] == 0x45 && romFile[2] == 0x53 && romFile[3] == 0x1A) {
-            return new INESRom(romFile);
+            return new INESRom(romFile, fileName);
         } else {
             return null;
         }

@@ -13,6 +13,13 @@ public class MMC1 extends Mapper {
     //Banks of 4kb CHR ROM chunks
     private final byte[][] chrRom;
 
+    //8kb of PRG RAM
+    //Todo: Different MMC1 boards have different amounts of PRG RAM
+    // Some are battery backed, some aren't. And some don't have any at all
+    // If the iNES header doesn't specify any PRG RAM, there is no way to know
+    // (Just provide 8kb of writable memory for now)
+    // Todo: Support saving battery backed PRG RAM to disk
+    private final byte[] prgRam = new byte[8192];
 
     //MMC1 uses a shift register as an interface to set the internal registers
     //It starts out with bit 4 set, and the other bits cleared
@@ -77,8 +84,9 @@ public class MMC1 extends Mapper {
     @Override
     public int cpuRead(int address) {
         if(address >= 0x6000 && address <= 0x7FFF) {
-            System.out.println("Read from Cartridge");
-            //TODO: Implement PRG RAM
+            //System.out.println("Read from Cartridge");
+
+            return prgRam[address & 0x1FFF];
 
         } else if(address >= 0x8000 && address <= 0xBFFF) {
             //First bank of program rom
@@ -136,6 +144,12 @@ public class MMC1 extends Mapper {
 
     @Override
     public void cpuWrite(int address, int data) {
+        if(address >= 0x6000 && address <= 0x7FFF) {
+            //TODO: Implement PRG RAM sizes
+            //System.out.println("MMC1: Write to PRG RAM");
+            prgRam[address & 0x1FFF] = (byte) data;
+
+        } else
         //Writes to this address range interface (PRG ROM) with the shift register
         if(address >= 0x8000 && address <= 0xFFFF) {
 
@@ -321,5 +335,20 @@ public class MMC1 extends Mapper {
     public boolean isChrRomEnabled(int address) {
         //The Character Rom should only be used when the CIRAM isn't
         return !isCIRAMEnabled(address);
+    }
+
+    @Override
+    public byte[] getProgramRAM() {
+        return prgRam;
+    }
+
+    @Override
+    public void setProgramRAM(byte[] programRAM) {
+        if(programRAM.length != prgRam.length) {
+            System.out.println("MMC1: Program ram could not be set because length does not match");
+            return;
+        }
+
+        System.arraycopy(programRAM, 0, prgRam, 0, prgRam.length);
     }
 }

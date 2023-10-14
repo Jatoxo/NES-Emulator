@@ -1,9 +1,18 @@
 package main.nes;
 
 import main.nes.mappers.Mapper;
+import main.nes.parsing.ROM;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 
 public class Cartridge extends BusDevice implements PPUBusDevice{
+	//Stores the ROM that the Cartridge originated from
+	ROM sourceROM;
+
 	//Count of 16kb chunks of PRG ROM
 	int pgrRomChunks;
 
@@ -28,6 +37,7 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 	 * @param trainer Whether the cartridge contains a 512-byte trainer at $7000-$71FF (stored before PRG data)
 	 */
 	public Cartridge(
+			ROM source,
 			int pgrRomChunks,
 			int chrRomChunks,
 			Mapper mapper,
@@ -37,11 +47,14 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 		//Cartridge space is 0x4020 - 0xFFFF on the CPU bus
 		super(0x4020, 0xFFFF);
 
+		this.sourceROM = source;
 		this.pgrRomChunks = pgrRomChunks;
 		this.chrRomChunks = chrRomChunks;
 		this.mapper = mapper;
 		this.batteryBackedRam = batteryBackedRam;
 		this.trainer = trainer;
+
+		loadPersistentData();
 	}
 
 
@@ -106,6 +119,62 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 	@Override
 	public int getAddrEnd() {
 		return 0x3FFF;
+	}
+
+	/**
+	 * Some cartridges have battery backed memory that will remain after the game is turned off.
+	 * This will save that memory to storage, so it can be restored the next time the same game is loaded.
+	 */
+	public void storePersistentData() throws IOException {
+		//The Mapper isn't aware whether the PRG RAM is persistent. So only actually save it
+		//if the ROM file indicates that the cartridge contains persistent memory
+		if(!hasBatteryBackedRam()) {
+			return;
+		}
+
+		byte[] programRam = mapper.getProgramRAM();
+
+		//TODO: Get save location and app name from preferences instead
+
+		String dataFolder = System.getenv("LOCALAPPDATA");
+		String savePath = dataFolder + "/JatNesEmulator/";
+		String saveName = sourceROM.getFileName() + ".cck";
+		String fullPath = savePath + "/" + saveName;
+
+		File saveFile = new File(savePath);
+		saveFile.mkdirs();
+
+		System.out.println("Storing PRG RAM to persistent storage at " + fullPath);
+		Files.write(Path.of(fullPath), programRam);
+	}
+
+	public void loadPersistentData() {
+		if(!hasBatteryBackedRam()) {
+			return;
+		}
+		//TODO: Get save location and app name from preferences instead
+
+		String dataFolder = System.getenv("LOCALAPPDATA");
+		String savePath = dataFolder + "/JatNesEmulator/";
+		String saveName = sourceROM.getFileName() + ".cck";
+		String fullPath = savePath + "/" + saveName;
+
+		File saveFile = new File(fullPath);
+		if(!saveFile.exists()) {
+			System.out.println("No PRG RAM data found to restore");
+			return;
+		}
+
+		byte[] prgRam;
+		try {
+			prgRam = Files.readAllBytes(Path.of(fullPath));
+		} catch (IOException e) {
+			System.out.println("Failed to load PRG RAM read data");
+			return;
+		}
+
+		mapper.setProgramRAM(prgRam);
+		System.out.println("Loaded PRG RAM from " + fullPath);
 	}
 
 

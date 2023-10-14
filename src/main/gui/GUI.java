@@ -230,6 +230,17 @@ public class GUI extends JFrame implements DropTargetListener {
 		setLocationRelativeTo(null);
 		setVisible(true);
 
+		addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				try {
+					nes.cartridge.storePersistentData();
+				} catch (IOException ex) {
+					throw new RuntimeException(ex);
+				}
+			}
+        });
+
 
 
 	}

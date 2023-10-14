@@ -63,7 +63,8 @@ public class INESRom extends ROM {
         }
     }
 
-    public INESRom(byte[] romFile) {
+    public INESRom(byte[] romFile, String fileName) {
+        super(fileName);
         data = romFile;
         header = new iNESHeader(romFile);
 
@@ -83,7 +84,7 @@ public class INESRom extends ROM {
         System.out.println("Has trainer: " + header.hasTrainer());
         System.out.println("Has persistent memory: " + header.hasPersistentMemory());
         System.out.println("Mirror mode: " + header.getMirrorMode());
-
+        System.out.println("------------------");
 
 
     }
@@ -107,6 +108,7 @@ public class INESRom extends ROM {
         }
 
         return new Cartridge(
+                this,
                 header.pgrRomChunks,
                 header.chrRomChunks,
                 mapper,
