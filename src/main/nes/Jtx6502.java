@@ -668,10 +668,7 @@ public class Jtx6502 implements Tickable {
 				}
 				return addr;
 			case ADDR_ABY:
-				int loo = read(pc.increment());
-				int hii = read(pc.increment());
-
-				i = loo | (hii << 8);
+				i = read(pc.increment()) | (read(pc.increment()) << 8);
 				addr = i + y.get();
 
 				if((i & 0xFF00) != (addr & 0xFF00)) {
