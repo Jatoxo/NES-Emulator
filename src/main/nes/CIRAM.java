@@ -21,6 +21,9 @@ public class CIRAM implements PPUBusDevice {
 
 
 	private int ppuToCIRAM(int addr) {
+		//TODO: Checking mirror mode for every read is very expensive
+		// (Idea: MirrorMode abstract class with inheriting mirroring implementations)
+		// (Idea 2: Do address translation in mapper)
 		Mapper.MirrorMode mirrorMode = nes.cartridge.getMirrorMode(addr);
 
 		switch(mirrorMode) {
@@ -40,7 +43,7 @@ public class CIRAM implements PPUBusDevice {
 				addr &= ~(1<<10);
 				break;
 			case ONE_SCREEN_SECOND:
-				//In this mode only the second nametable is active, so A10 is always 0
+				//In this mode only the second nametable is active, so A10 is always 1
 
 				//Set address bit 10
 				addr |= 1 << 10;

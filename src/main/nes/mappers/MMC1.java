@@ -29,7 +29,9 @@ public class MMC1 extends Mapper {
     //1: one-screen (upper nametable)
     //2: vertical
     //3: horizontal
-    private byte mirrorMode = 0;
+    private int mirrorMode = 0;
+    //Same value but as enum for caching speed
+    private MirrorMode mirrorModeEnum = MirrorMode.ONE_SCREEN_FIRST;
 
     //0,1: switch 32 KB at $8000, ignoring low bit of bank number
     //  2: fix first bank at $8000 and switch 16 KB bank at $C000
@@ -219,8 +221,30 @@ public class MMC1 extends Mapper {
         if(register == 0b00) {
             //Write to control register
 
+
             //First two bits are the mirroring mode
-            mirrorMode = (byte) (data & 0b11);
+            byte mirror = (byte) (data & 0b11);
+            if(mirror != mirrorMode) {
+                mirrorMode = mirror;
+                MirrorMode newMode = null;
+                switch(mirror) {
+                    case 0b00:
+                        newMode = MirrorMode.ONE_SCREEN_FIRST;
+                        break;
+                    case 0b01:
+                        newMode = MirrorMode.ONE_SCREEN_SECOND;
+                        break;
+                    case 0b10:
+                        newMode = MirrorMode.VERTICAL;
+                        break;
+                    case 0b11:
+                        newMode = MirrorMode.HORIZONTAL;
+                }
+                mirrorModeEnum = newMode;
+                System.out.println("> MMC1: Mirror mode changed to " + newMode);
+            }
+
+
 
             data >>>= 2;
             //Bit 2-3 are the PRG ROM bank mode
@@ -310,19 +334,7 @@ public class MMC1 extends Mapper {
 
     @Override
     public Mapper.MirrorMode getMirrorMode(int address) {
-        switch(mirrorMode) {
-            case 0b00:
-                return MirrorMode.ONE_SCREEN_FIRST;
-            case 0b01:
-                return MirrorMode.ONE_SCREEN_SECOND;
-            case 0b10:
-                return MirrorMode.VERTICAL;
-            case 0b11:
-                return MirrorMode.HORIZONTAL;
-        }
-
-        System.out.println("WEEWOOWEEWOO BIG FUCKY WUCKY");
-        return null;
+        return mirrorModeEnum;
     }
 
     @Override
