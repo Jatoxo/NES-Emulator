@@ -66,10 +66,6 @@ public class Sequencer {
 
         //Go through all sequences in the current set
         for(int i = 0; i < getCurrentSet().sequences.size(); i++) {
-            //Skip if there are no listeners
-            if(!listeners.containsKey(i)) {
-                continue;
-            }
 
             boolean[] sequence = getCurrentSet().sequences.get(i);
 

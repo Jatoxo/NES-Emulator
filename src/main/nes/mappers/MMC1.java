@@ -18,7 +18,6 @@ public class MMC1 extends Mapper {
     // Some are battery backed, some aren't. And some don't have any at all
     // If the iNES header doesn't specify any PRG RAM, there is no way to know
     // (Just provide 8kb of writable memory for now)
-    // Todo: Support saving battery backed PRG RAM to disk
     private final byte[] prgRam = new byte[8192];
 
     //MMC1 uses a shift register as an interface to set the internal registers

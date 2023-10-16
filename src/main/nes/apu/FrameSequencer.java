@@ -4,7 +4,7 @@ package main.nes.apu;
 import main.nes.Tickable;
 
 //Just a sequencer preconfigured to act as the APU frame sequencer and implementing the interface
-public class FrameSequencer extends Sequencer implements Tickable {
+public class FrameSequencer extends Sequencer {
 
     public static final int INTERRUPTS = 0;
     public static final int LENGTH_SWEEPS = 1;
@@ -42,10 +42,11 @@ public class FrameSequencer extends Sequencer implements Tickable {
     /**
      * Ticked every master clock cycle
      */
-    @Override
     public void tick() {
         if(divider-- == 0) {
             divider = 89489;
+
+            //TODO: This is too slow. Replace with hardcoded sequencer
             advance();
         }
     }
