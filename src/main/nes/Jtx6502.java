@@ -34,11 +34,11 @@ public class Jtx6502 implements Tickable {
 
 
 	//Registers (8-Bit, pc is 16 bit)
-	public Register a = new Register(0x00, Register.BitSize.BITS_8, "Accumulator", "A"); //Accumulator Register
-	public Register x = new Register(0x00, Register.BitSize.BITS_8, "X index reg", "X"); //X (Index Register)
-	public Register y = new Register(0x00, Register.BitSize.BITS_8, "Y index reg", "Y"); //Y (Index Register)
-	public Register s = new Register(0x00, Register.BitSize.BITS_8, "Stack Pointer", "S"); //Stack Pointer (Points to location on bus)
-	public Register pc = new Register(0x00, Register.BitSize.BITS_16, "Program Counter", "PC"); //Program counter
+	public Register a = new Register(0x00, Register.BitSize.BITS_8); //Accumulator Register
+	public Register x = new Register(0x00, Register.BitSize.BITS_8); //X (Index Register)
+	public Register y = new Register(0x00, Register.BitSize.BITS_8); //Y (Index Register)
+	public Register s = new Register(0x00, Register.BitSize.BITS_8); //Stack Pointer (Points to location on bus)
+	public Register pc = new Register(0x00, Register.BitSize.BITS_16); //Program counter
 
 	public int status = 0x00; //Status register
 	//public FlagRegister statusF = new FlagRegister(0x00, Register.BitSize.BITS_8, "Status", "P");

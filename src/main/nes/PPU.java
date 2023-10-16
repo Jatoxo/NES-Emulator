@@ -48,7 +48,7 @@ public class PPU extends BusDevice implements Tickable {
 
 
 	public static final int PPUCTRL = 0x2000;
-	FlagRegister ppuCtrl = new FlagRegister(0x00, Register.BitSize.BITS_8, "PPU Control", "PPUCTRL");
+	FlagRegister ppuCtrl = new FlagRegister(0x00, Register.BitSize.BITS_8);
 	//7  bit  0
 	//---- ----
 	//VPHB SINN
@@ -73,7 +73,7 @@ public class PPU extends BusDevice implements Tickable {
 	public static final int CTRL_V = 0x80; ///Generate an NMI at the start of the vertical blanking interval (0: off; 1: on)
 
 	public static final int PPUMASK = 0x2001;
-	FlagRegister ppuMask = new FlagRegister(0x00, Register.BitSize.BITS_8, "PPU Mask", "PPUMASK", 0x2001);
+	FlagRegister ppuMask = new FlagRegister(0x00, Register.BitSize.BITS_8);
 	//7  bit  0
 	//---- ----
 	//BGRs bMmG
@@ -97,7 +97,7 @@ public class PPU extends BusDevice implements Tickable {
 
 
 	public static final int PPUSTATUS = 0x2002;
-	FlagRegister ppuStatus = new FlagRegister(0x00, Register.BitSize.BITS_8, "PPU Status", "PPUSTATUS", 0x2002);
+	FlagRegister ppuStatus = new FlagRegister(0x00, Register.BitSize.BITS_8);
 	//7  bit  0
 	//---- ----
 	//VSO. ....
@@ -123,20 +123,20 @@ public class PPU extends BusDevice implements Tickable {
 	public static final int STATUS_V = 0x80; //Vertical blank has started (0: not in vblank; 1: in vblank).
 
 	public static final int OAMADDR = 0x2003;
-	Register oamAddr = new Register(0x00, Register.BitSize.BITS_8, "OAM Address", "OAMADDR", 0x2003);
+	Register oamAddr = new Register(0x00, Register.BitSize.BITS_8); //OAM Address
 
 	public static final int OAMDATA = 0x2004;
 
 	public static final int PPUSCROLL = 0x2005;
-	Register ppuScroll = new Register(0x00, Register.BitSize.BITS_8, "PPU Scroll", "PPUSCROLL", 0x2005);
+	Register ppuScroll = new Register(0x00, Register.BitSize.BITS_8);
 
 	public static final int PPUADDR = 0x2006;
 
 	//These are the "actual" registers v and t (https://www.nesdev.org/wiki/PPU_scrolling)
-	Register vAddr = new Register(0x00, Register.BitSize.BITS_16, "vAddr", "vAddr");
-	Register tAddr = new Register(0x00, Register.BitSize.BITS_16, "tAddr", "tAddr");
+	Register vAddr = new Register(0x00, Register.BitSize.BITS_16);
+	Register tAddr = new Register(0x00, Register.BitSize.BITS_16);
 
-	Register fXdummy = new Register(0x00, Register.BitSize.BITS_8, "fineX", "fineX");
+	Register fXdummy = new Register(0x00, Register.BitSize.BITS_8);
 
 	int fineX = 0;
 
@@ -184,9 +184,9 @@ public class PPU extends BusDevice implements Tickable {
 	private static class PPURenderState {
 
 		public PPURenderState(FlagRegister controlReg, FlagRegister maskReg, Register tReg, int fineX) {
-			ppuCtrl = new FlagRegister(controlReg.get(), Register.BitSize.BITS_8, controlReg.name, controlReg.shortName);
-			ppuMask = new FlagRegister(maskReg.get(), Register.BitSize.BITS_8, maskReg.name, maskReg.shortName);
-			tAddr = new Register(tReg.get(), Register.BitSize.BITS_16, tReg.name, tReg.shortName);
+			ppuCtrl = new FlagRegister(controlReg.get(), Register.BitSize.BITS_8);
+			ppuMask = new FlagRegister(maskReg.get(), Register.BitSize.BITS_8);
+			tAddr = new Register(tReg.get(), Register.BitSize.BITS_16);
 			this.fineX = fineX;
 
 
