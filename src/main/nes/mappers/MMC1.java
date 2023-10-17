@@ -336,17 +336,7 @@ public class MMC1 extends Mapper {
         return mirrorModeEnum;
     }
 
-    @Override
-    public boolean isCIRAMEnabled(int address) {
-        //When bit 13 of the address is set, the CIRAM should be enabled
-        return (address & (1 << 13)) > 0;
-    }
 
-    @Override
-    public boolean isChrRomEnabled(int address) {
-        //The Character Rom should only be used when the CIRAM isn't
-        return !isCIRAMEnabled(address);
-    }
 
     @Override
     public byte[] getProgramRAM() {

@@ -3,6 +3,7 @@ package main.nes.mappers;
 public abstract class Mapper {
 	public static final int NROM = 0;
 	public static final int MMC1 = 1;
+	public static final int AXROM = 7;
 
 	public final int mapperId;
 
@@ -29,10 +30,18 @@ public abstract class Mapper {
 	public abstract MirrorMode getMirrorMode(int address);
 
 	//whether the CIRAM is enabled when accessing this address
-	public abstract boolean isCIRAMEnabled(int address);
+	public boolean isCIRAMEnabled(int address) {
+		//Default implementation assigns last half to CHR ROM and first half to CIRAM
+		//When bit 13 of the address is set, the CIRAM should be enabled
+		return (address & (1 << 13)) > 0;
+	}
 
 	//whether the CHR memory of the cart is enabled when accessing this address
-	public abstract boolean isChrRomEnabled(int address);
+	public boolean isChrRomEnabled(int address) {
+		//Default implementation assigns last half to CHR ROM and first half to CIRAM
+		//CHR ROM will be disabled when bit 13 of the address is set (CIRAM is enabled)
+		return (address & (1 << 13)) == 0;
+	}
 
 	/**
 	 * If this cartridge contains PRG RAM, returns the current contents of it
