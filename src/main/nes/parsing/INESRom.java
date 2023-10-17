@@ -1,6 +1,7 @@
 package main.nes.parsing;
 
 import main.nes.Cartridge;
+import main.nes.mappers.AxROM;
 import main.nes.mappers.MMC1;
 import main.nes.mappers.Mapper;
 import main.nes.mappers.NROM;
@@ -94,6 +95,7 @@ public class INESRom extends ROM {
 
         Mapper mapper;
 
+        //Todo: This shouldn't be specific to iNES roms
         switch(mapperId) {
             case Mapper.NROM:
                 mapper = new NROM(getProgramRom(), getCharacterRom(), header.getMirrorMode());
@@ -101,6 +103,10 @@ public class INESRom extends ROM {
 
             case Mapper.MMC1:
                 mapper = new MMC1(getProgramRom(), header.pgrRomChunks, getCharacterRom(), Math.max(header.chrRomChunks, 1));
+                break;
+
+            case Mapper.AXROM:
+                mapper = new AxROM(getProgramRom());
                 break;
 
             default:

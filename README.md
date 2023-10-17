@@ -31,7 +31,15 @@ If you truly hate yourself and want to contribute to this spaghetti, feel free t
 
 # Supported Mappers
 
-- [x] NROM
+#### Full support
+- [x] NROM (Super Mario Bros, Donkey Kong, Micro Mages, Excite Bike, ...)
+
+#### Partial Support (Broken rendering)
+- [ ] AxROM (Battletoads, Solstice, ...)
+
+- [ ] MMC1 (The Legend of Zelda, Dr. Mario, ...)
+#### Unsupported
+
 - [ ] All others
 
 # Screenshots
