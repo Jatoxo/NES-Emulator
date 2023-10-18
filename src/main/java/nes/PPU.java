@@ -1,4 +1,4 @@
-package main.nes;
+package nes;
 
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
@@ -23,8 +23,12 @@ public class PPU extends BusDevice implements Tickable {
 
 	public BufferedImage output;
 
-	//Output buffer, one byte corresponds to one pixel and represents an address into palette ram
-	byte[] outputBuffer = new byte[SCREEN_WIDTH * SCREEN_HEIGHT];
+	//Screen buffer of palette ram index buffer, one byte corresponds to one pixel and represents an address into palette ram
+	byte[] indexBuffer = new byte[SCREEN_WIDTH * SCREEN_HEIGHT];
+
+	//RGB output buffer, three bytes correspond to one pixel and represent an RGB value
+	byte[] outputBuffer = new byte[SCREEN_WIDTH * SCREEN_HEIGHT * 3];
+
 
 	Palette palette;
 
@@ -394,10 +398,7 @@ public class PPU extends BusDevice implements Tickable {
 
 		}
 
-		if(scanline == 30 && scanlineCycle == 64) {
-			//Fixed: This is faking a sprite 0 hit for SMB
-			//ppuStatus.setFlag("S", true);
-		}
+
 		if(scanlineCycle == 256) { //Sprite eval is technically cycles 65-256, but I do it all at once
 
 			evaluateSprites(scanline);
@@ -412,7 +413,7 @@ public class PPU extends BusDevice implements Tickable {
 			renderSprites();
 			renderBuffer();
 
-			nes.gui.renderScreen(output);
+			nes.gui.renderScreen(outputBuffer);
 
 			frameComplete = true;
 			sprite0HitScanline = -1;
@@ -534,7 +535,7 @@ public class PPU extends BusDevice implements Tickable {
 			boolean flipH = (attr & 0x40) > 0;
 			boolean flipV = (attr & 0x80) > 0; //Also swaps tiles in 8x16 mode
 
-			byte[] bitPlane0 = getPatternEntry(ppuCtrl.isSet(CTRL_S) ? 1 : 0, chrInd, 0);
+ 			byte[] bitPlane0 = getPatternEntry(ppuCtrl.isSet(CTRL_S) ? 1 : 0, chrInd, 0);
 			byte[] bitPlane1 = getPatternEntry(ppuCtrl.isSet(CTRL_S) ? 1 : 0, chrInd, 1);
 
 			for(int spriteY = 0; spriteY < 8; spriteY++) {
@@ -564,12 +565,12 @@ public class PPU extends BusDevice implements Tickable {
 						//If current sprite is sprite 0 and sprite0Hit hasn't happened this frame
 						if(i < 4 && sprite0HitScanline == -1) {
 							//If bg and sprite pixel is not transparent
-							if((outputBuffer[posByte] & 0b11) != 0 && ((paletteIndex & 0b11) != 0)) {
+							if((indexBuffer[posByte] & 0b11) != 0 && ((paletteIndex & 0b11) != 0)) {
 								sprite0HitScanline = posY;
 								sprite0HitScanlineCycle = posX;
 							}
 						}
-						outputBuffer[posByte] = (byte) paletteIndex;
+						indexBuffer[posByte] = (byte) paletteIndex;
 
 						//int colorByte = palleteRam[paletteIndex];
 						//int colorOut = palette.colors[colorByte].getRGB();
@@ -583,21 +584,25 @@ public class PPU extends BusDevice implements Tickable {
 		}
 	}
 
+	/**
+	 * Fills the outputBuffer with the RGB values obtained by looking up the color data described in the index buffer
+	 * in palette ram
+	 */
 	private void renderBuffer() {
-		for(int i = 0; i < outputBuffer.length; i++) {
-			int paletteIndex = outputBuffer[i];
+		for(int i = 0; i < indexBuffer.length; i++) {
+			int paletteIndex = indexBuffer[i];
 
 			paletteIndex = ((paletteIndex & 0x3) == 0) ? 0 : paletteIndex;
 			int colorByte = palleteRam[paletteIndex];
 			int rgbOut = palette.colors[colorByte].getRGB();
 
-			int x = i & 0xFF;
-			int y = (i & 0xFF00) >>> 8;
+			int rgbBufferIndex = 3 * i;
+			outputBuffer[rgbBufferIndex]     = (byte) (rgbOut >> 16);
+			outputBuffer[rgbBufferIndex + 1] = (byte) (rgbOut >> 8);
+			outputBuffer[rgbBufferIndex + 2] = (byte) rgbOut;
 
-			output.getRaster().getDataBuffer().setElem(i, rgbOut);
-			//output.setRGB(x, y, rgbOut);
 		}
-	}
+    }
 
 	private void renderBackground2() { //electric boogaloo
 		//Background rendering depends on the following things:
@@ -613,7 +618,7 @@ public class PPU extends BusDevice implements Tickable {
 		//      That would be incredibly stupid and I really need to redo the whole PPU
 
 		if(!ppuMask.isSet(MASK_BG)) {
-			outputBuffer = new byte[SCREEN_WIDTH * SCREEN_HEIGHT];
+			indexBuffer = new byte[SCREEN_WIDTH * SCREEN_HEIGHT];
 			return;
 		}
 
@@ -730,7 +735,7 @@ public class PPU extends BusDevice implements Tickable {
 
 				paletteSelect = (((colorShift0 >>> 1) >>> (7 - renderState.fineX)) & 0x1) | ((((colorShift1 >>> 1) >>> (7 - renderState.fineX)) & 0x1)  << 1);
 
-				outputBuffer[pixel] = (byte) ((paletteSelect << 2) | (bit1 << 1) | (bit0));
+				indexBuffer[pixel] = (byte) ((paletteSelect << 2) | (bit1 << 1) | (bit0));
 
 				//Shift over the registers to the next pixel
 				rowBits0 = rowBits0 << 1;
@@ -1105,3 +1110,4 @@ public class PPU extends BusDevice implements Tickable {
 		ppuBus.cart = cartridge;
 	}
 }
+

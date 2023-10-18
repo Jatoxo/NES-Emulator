@@ -1,41 +1,44 @@
-package main.gui;
+package gui;
 
 import com.formdev.flatlaf.FlatLightLaf;
-import main.input.StandardController;
-import main.nes.Nes;
-import main.nes.Palette;
-import main.nes.parsing.RomParser;
-import main.nes.parsing.UnsupportedRomException;
+import input.StandardController;
+import nes.Nes;
+import nes.parsing.RomParser;
+import nes.parsing.UnsupportedRomException;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.LineUnavailableException;
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.dnd.*;
 import java.awt.event.*;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.LinkedList;
-import javax.sound.sampled.*;
+import java.util.Objects;
 
 
-public class GUI extends JFrame implements DropTargetListener {
+public class GUI extends JFrame {
 
 
-	Color[] palette = Palette.defaultPalette().colors;
+	public static void main(String[] args) throws IOException, UnsupportedRomException, UnsupportedLookAndFeelException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+		try {
+			UIManager.setLookAndFeel(new FlatLightLaf());
+		} catch(Exception e) {
+			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		}
 
-	private final Dimension screenSize = new Dimension(256, 240);
-
-	public BufferedImage img;
-
-	private final JLabel render;
+		GUI gui = new GUI();
+		gui.nes.start();
+	}
 
 	private final Nes nes;
 
+	private final NesPanel nesScreen = new NesPanel();
+
 	private final String EMU_NAME = "COCK";
+
 
 	private long lastFrame = 0;
 	final LinkedList<Long> fpsBuffer = new LinkedList<>();
@@ -47,35 +50,13 @@ public class GUI extends JFrame implements DropTargetListener {
 		fpsThread.start();
 
 
+		Dimension screenSize = new Dimension(256, 240);
 
 
-		//screenSize = new Dimension(1, 1);
-
-
-
-
-		img = new BufferedImage(screenSize.width, screenSize.height, BufferedImage.TYPE_INT_RGB);
-
-		render = new JLabel(new ImageIcon(img));
-
-		getContentPane().add(render, BorderLayout.CENTER);
-
-
-		render.addComponentListener(new ComponentAdapter() {
-			@Override
-			public void componentResized(ComponentEvent e) {
-				super.componentResized(e);
-				repaint();
-			}
-		});
+		getContentPane().add(nesScreen, BorderLayout.CENTER);
 
 		requestFocus();
-		addKeyListener(new KeyListener() {
-			@Override
-			public void keyTyped(KeyEvent e) {
-
-			}
-
+		addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyPressed(KeyEvent e) {
 				StandardController controller = (StandardController) nes.controllerPorts.player1;
@@ -143,11 +124,8 @@ public class GUI extends JFrame implements DropTargetListener {
 						controller.buttonStart = false;
 						break;
 				}
-				//System.out.println(KeyEvent.getKeyText(e.getKeyCode()));
-
 			}
 		});
-
 
 
 		setupMenus();
@@ -175,7 +153,7 @@ public class GUI extends JFrame implements DropTargetListener {
 					fpsBuffer.clear();
 				}
 
-				int val = Math.round(cumulativeFPS / (float)size);
+				int val = Math.round(cumulativeFPS / (float) size);
 				f.setTitle(EMU_NAME + " - FPS: " + val);
 				try {
 					Thread.sleep(500);
@@ -212,20 +190,25 @@ public class GUI extends JFrame implements DropTargetListener {
 		setJMenuBar(menuBar);
 
 	}
+
 	private void setupFrame() {
 
 		setFocusTraversalKeysEnabled(false);
 
-		new DropTarget(this, this);
 
-		//There's 9129012 different ways of doing this but this worky
-		setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/Nes_controller_square.png")));
+		try {
+			Image appIcon = ImageIO.read(Objects.requireNonNull(getClass().getResource("/Nes_controller_square.png")));
+			setIconImage(appIcon);
+		} catch(IOException e) {
+			throw new RuntimeException(e);
+		}
+
 
 		GraphicsDevice gd = getGraphicsConfiguration().getDevice();
 		double height = gd.getDisplayMode().getHeight() / 1.5;
 
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
-		setMinimumSize(new Dimension(500, 469));
+		setMinimumSize(new Dimension(256, 260));
 		setSize((int) Math.round((height) / 0.9375), (int) Math.round(height));
 		setLocationRelativeTo(null);
 		setVisible(true);
@@ -235,42 +218,50 @@ public class GUI extends JFrame implements DropTargetListener {
 			public void windowClosing(WindowEvent e) {
 				try {
 					nes.cartridge.storePersistentData();
-				} catch (IOException ex) {
+				} catch(IOException ex) {
 					throw new RuntimeException(ex);
 				}
 			}
 		});
 
-
-
-	}
-
-	@Override
-	public void repaint() {
-		super.repaint();
-
-		/*
-		Random r = new Random();
-		for(int y = 0; y < screenSize.height; y++) {
-			for(int x = 255; x < screenSize.width; x++) {
-				int i = r.nextInt(palette.length);
-				img.setRGB(x,y,palette[i].getRGB());
+		new DropTarget(this, new DropTargetAdapter() {
+			@Override
+			public void dragOver(DropTargetDragEvent event) {
+				event.acceptDrag(DnDConstants.ACTION_LINK);
 			}
-		}
-		 */
 
+			@Override
+			public void drop(DropTargetDropEvent event) {
+				event.acceptDrop(DnDConstants.ACTION_LINK);
 
-		//Image newImg = img.getScaledInstance(render.getWidth(), render.getHeight(), Image.SCALE_DEFAULT);
-		Image newImg = img.getScaledInstance(render.getWidth(), render.getHeight(), Image.SCALE_FAST);
-		render.setIcon(new ImageIcon(newImg));
+				// Get the transfer which can provide the dropped item data
+				Transferable transferable = event.getTransferable();
+
+				try {
+					// If the drop items are files
+					if(event.getCurrentDataFlavors()[0].isFlavorJavaFileListType()) {
+						// Get all the dropped files
+						java.util.List<File> droppedFiles = (java.util.List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
+						// If there are multiple, load only one
+						File file = droppedFiles.get(0);
+						nes.insertCartridge(RomParser.parseRom(file.getPath()));
+					}
+
+				} catch(Exception e) {
+					e.printStackTrace();
+				}
+
+				// Inform that the drop is complete
+				event.dropComplete(true);
+			}
+		});
+
 
 	}
 
-	public void renderScreen(BufferedImage screen) {
 
-		img = screen;
-		repaint();
-
+	public void renderScreen(byte[] screen) {
+		nesScreen.updateScreen(screen);
 
 		long elapsed = System.nanoTime() - lastFrame;
 		elapsed = Math.round(elapsed / 1000000.0);
@@ -278,7 +269,7 @@ public class GUI extends JFrame implements DropTargetListener {
 		if(elapsed != 0) {
 			long fps = Math.round(1000.0 / elapsed);
 
-			synchronized (fpsBuffer) {
+			synchronized(fpsBuffer) {
 				fpsBuffer.add(fps);
 			}
 		}
@@ -286,88 +277,6 @@ public class GUI extends JFrame implements DropTargetListener {
 		lastFrame = System.nanoTime();
 	}
 
-	public static void main(String[] args) throws InterruptedException, LineUnavailableException, IOException, UnsupportedRomException {
-		try {
-			UIManager.setLookAndFeel(new FlatLightLaf());
 
-		} catch(Exception e) {
-			e.printStackTrace();
-		}
-
-		//JFrame.setDefaultLookAndFeelDecorated(true);
-
-
-
-
-
-
-		GUI gui = new GUI();
-
-
-		gui.nes.start();
-
-
-
-
-		/*
-		Random r = new Random();
-		while(true) {
-			try {
-				Thread.sleep(16 * (r.nextInt(2) + 1) );
-			} catch(InterruptedException e) {
-				e.printStackTrace();
-			}
-			gui.recock();
-		}
-		 */
-	}
-
-
-	@Override
-	public void dragEnter(DropTargetDragEvent event) {
-		//event.acceptDrag(DnDConstants.ACTION_LINK);
-	}
-
-	@Override
-	public void dragOver(DropTargetDragEvent event) {
-		event.acceptDrag(DnDConstants.ACTION_LINK);
-	}
-
-	@Override
-	public void dropActionChanged(DropTargetDragEvent event) {
-		//event.acceptDrag(DnDConstants.ACTION_LINK);
-	}
-
-	@Override
-	public void dragExit(DropTargetEvent dte) {
-
-	}
-
-	@Override
-	public void drop(DropTargetDropEvent event) {
-		// Accept copy drops
-		event.acceptDrop(DnDConstants.ACTION_LINK);
-
-		// Get the transfer which can provide the dropped item data
-		Transferable transferable = event.getTransferable();
-
-		try {
-			// If the drop items are files
-			if (event.getCurrentDataFlavors()[0].isFlavorJavaFileListType()) {
-				// Get all the dropped files
-				java.util.List<File> files = (java.util.List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
-				// Loop them through
-				for (File file : files) {
-					nes.insertCartridge(RomParser.parseRom(file.getPath()));
-				}
-
-			}
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-		// Inform that the drop is complete
-		event.dropComplete(true);
-	}
 }
+
