@@ -47,9 +47,9 @@ public class Nes {
 
 		audio = new Audio(apu);
 
+		cpu.bus.addBusDevice(new Memory());
 
 		controllerPorts = new ControllerPorts();
-		cpu.bus.addBusDevice(new Memory());
 		cpu.bus.addBusDevice(controllerPorts);
 		connectController(new StandardController(), 0);
 
@@ -108,6 +108,8 @@ public class Nes {
 	public void insertCartridge(Cartridge cart) {
 		clock.paused = true;
 
+		//This is called from the GUI thread so in order to prevent issues
+		//a sleep is necessary for some reason
 		try {
 			sleep(50);
 		} catch(InterruptedException e) {

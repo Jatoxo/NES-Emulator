@@ -590,10 +590,17 @@ public class PPU extends BusDevice implements Tickable {
 	 */
 	private void renderBuffer() {
 		for(int i = 0; i < indexBuffer.length; i++) {
+			//Obtain the index into palette ram for the current pixel
 			int paletteIndex = indexBuffer[i];
 
-			paletteIndex = ((paletteIndex & 0x3) == 0) ? 0 : paletteIndex;
+			//If the two LSB are 0, the pixel is transparent and the universal background color is used (index 0)
+			if((paletteIndex & 0b11) == 0)
+				paletteIndex = 0;
+
+			//Get the byte which describes the color from palette ram
 			int colorByte = palleteRam[paletteIndex];
+
+			//Look up the RGB value for this byte from the palette
 			int rgbOut = palette.colors[colorByte].getRGB();
 
 			int rgbBufferIndex = 3 * i;
