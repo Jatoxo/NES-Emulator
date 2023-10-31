@@ -271,14 +271,8 @@ public class Jtx6502 implements Tickable {
 			case BRK:
 				pc.increment();
 
-				write(0x0100 + s.get(), (pc.get() >> 8) & 0xFF); //Push pc to stack
-				s.decrement();
-				write(0x0100 + s.get(), pc.get() & 0xFF);
-				s.decrement();
-
-
-				write(0x0100 + s.get(), status | B | U); //Push status to stack with B Flag set
-				s.decrement();
+				pushWord(pc.get()); //Push pc to stack
+				pushByte(status | B | U); //Push status to stack with B Flag set
 
 				setFlag(I, true); //Set I flag (After pushing status?)
 				pc.set( (read(0xFFFE)) | (read(0xFFFF) << 8));
@@ -400,10 +394,8 @@ public class Jtx6502 implements Tickable {
 				break;
 			case JSR:
 				i = pc.get() - 1; //PC is pushed before second byte of address is read, so it points to the second byte of the instruction
-				write(0x0100 + s.get(), (i >> 8) & 0xFF);
-				s.decrement();
-				write(0x0100 + s.get(), i & 0xFF);
-				s.decrement();
+
+				pushWord(i);
 
 				//Stack could have written to the high byte of the absolute address, so read it again (hack)
 				int hiPC = read(pc.get() - 1, true) & 0xFF;
@@ -474,18 +466,15 @@ public class Jtx6502 implements Tickable {
 				break;
 
 			case PHA:
-				write(0x0100 + s.get(), a.get());
-				s.decrement();
+				pushByte(a.get());
 				break;
 
 			case PHP:
-				write(0x0100 + s.get(), status | B | U);
-				s.decrement();
+				pushByte(status | B | U);
 				break;
 
 			case PLA:
-				s.increment();
-				i = read(0x100 + s.get());
+				i = popByte();
 				a.set(i);
 
 				setFlag(Z, a.get() == 0);
@@ -494,8 +483,7 @@ public class Jtx6502 implements Tickable {
 				break;
 
 			case PLP:
-				s.increment();
-				i = read(0x100 + s.get());
+				i = popByte();
 				i &= 0xEF; //Mask out B Flag
 				status = i | U;
 				break;
@@ -533,29 +521,21 @@ public class Jtx6502 implements Tickable {
 				break;
 
 			case RTI:
-				s.increment();
-				status = (read(0x100 + s.increment()) & 0xFF) & 0xEF; //Mask out B Flag
-				status |= U; //Set U Flag
+				//Restore status register
+				status = popByte();
+				status &= 0xEF; //Mask out B Flag
+				status |= U;    //Set U Flag
 
-				int pcl = read(0x100 + s.increment()) & 0xFF;
-				int pch = read(0x100 + s.get()) & 0xFF;
-
-				int pcfull = pcl | (pch << 8);
-				pc.set(pcfull);
+				//Restore program counter
+				pc.set(popWord());
 				break;
 
 			case RTS:
-				s.increment();
-				int lo = 0x100 + s.increment();
-				int lo2 = read(lo) & 0xFF;
-				int hi = 0x100 + s.get();
-				int hi2 = read(hi) & 0xFF;
+				//Fetch PC Value from stack
+				int pcValue = popWord();
 
-				int full = lo2 | (hi2 << 8);
-
-				i = full + 1;
-
-				pc.set(i);
+				//Set PC to the value from the stack plus 1
+				pc.set(pcValue + 1);
 				break;
 
 			case SBC:
@@ -737,24 +717,21 @@ public class Jtx6502 implements Tickable {
 
 	public void irq() { //Interrupt request signal
 
-		// If interrupts are allowed
+		//If interrupts are allowed
 		if(getFlag(I) == 0) {
 			System.out.println("--------------   IRQ      ----------------------");
 
-			write(0x0100 + s.get(), (pc.get() >> 8) & 0x00FF);
-			s.decrement();
-			write(0x0100 + s.get(), pc.get() & 0x00FF);
-			s.decrement();
+			//Push PC to stack
+			pushWord(pc.get());
 
 			//Push status to stack
 			setFlag(B, false);
 			setFlag(U, true);
-			write(0x0100 + s.get(), status);
-			s.decrement();
+			pushByte(status);
 
 			setFlag(I, true);
 
-			// Read new pc location from fixed address
+			//Read new pc location from fixed address
 			pc.set(read(0xFFFE) | (read(0xFFFF) << 8));
 
 			cycles = 7;
@@ -762,16 +739,13 @@ public class Jtx6502 implements Tickable {
 	}
 
 	public void nmi() { //Non maskable interrupt request signal
-		write(0x0100 + s.get(), (pc.get() >> 8) & 0x00FF);
-		s.decrement();
-		write(0x0100 + s.get(), pc.get() & 0x00FF);
-		s.decrement();
+		//Push PC to stack
+		pushWord(pc.get());
 
 		//Push status to stack
 		setFlag(B, false);
 		setFlag(U, true);
-		write(0x0100 + s.get(), status);
-		s.decrement();
+		pushByte(status);
 
 		setFlag(I, true);
 
@@ -779,6 +753,59 @@ public class Jtx6502 implements Tickable {
 		pc.set(read(0xFFFA) | (read(0xFFFB) << 8));
 
 		cycles = 7;
+	}
+
+	/**
+	 * Convenience function for pushing an 8-bit value onto the stack
+	 */
+	void pushByte(int data) {
+		//The stack pointer always points at the next free spot in the stack
+		int stackHead = 0x100 + s.get();
+		write(stackHead, data & 0xFF);
+
+		s.decrement();
+	}
+
+	/**
+	 * Convenience function for popping an 8-bit value from the stack.
+	 * Returns the topmost value from the stack and removes it
+	 */
+	int popByte() {
+		//The stack pointer always points at the next free spot in the stack
+		s.increment();
+
+		int stackHead = 0x100 + s.get();
+
+		return read(stackHead);
+	}
+
+
+	/**
+	 * Convenience function for pushing a 16-bit value onto the stack
+	 * The word is pushed little endian (LSB toward top of the stack)
+	 */
+	void pushWord(int data) {
+		//Push high byte first
+		pushByte((byte) (data >>> 8));
+
+		//Push low byte last (top of stack)
+		pushByte((byte) data);
+	}
+
+	/**
+	 * Convenience function for popping a 16-bit value from the stack.
+	 * Combines the two topmost bytes from the stack in a little endian manner (LSB at top of stack),
+	 * removes them from the stack and returns the combined value.
+	 */
+	int popWord() {
+		int value;
+
+		//Read in lower byte from top of stack
+		value = popByte();
+		//Read in upper byte following
+		value |= popByte() << 8;
+
+		return value;
 	}
 
 
