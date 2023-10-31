@@ -25,7 +25,12 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
     //Whether an interrupt is currently triggered
     private boolean triggerInterrupt = false;
 
-    public volatile double audioValue = 0;
+    //Lookup table for the pulse channels. The maximum value is $F + $F = 30, so 31 entries are needed (because 0 is one)
+    private double[] pulseLookup = new double[31];
+
+    //Lookup table for the rest of the channels (Triangle, Noise, DMC)
+    private double[] tndLookup = new double[203];
+
 
 
     public APU(Nes nes) {
@@ -35,6 +40,9 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
 
         //Listen to the IRQ sequence to trigger IRQs with the CPU
         frameSequencer.addListener(FrameSequencer.INTERRUPTS, this);
+
+        //Generate the Mixing lookup tables
+        generateLookups();
     }
 
     /**
@@ -42,14 +50,16 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
      * @return The volume level between 0 and 1
      */
     public double getVolume() {
+        //double pulseOut = pulseLookup[pulse1.getVolume() + pulse2.getVolume()];
 
-        double pulse_out = 95.88 / ((8128 / (double) (pulse1.getVolume() + pulse2.getVolume())) + 100);
+        //double tndOut = tndLookup[3 * triangle.getVolume() + 2 * noise.getVolume() /*+ dmc.getVolume()*/];
 
-        double tnd_out =
-                159.79 / (1 / ((triangle.getVolume() / 8227.0) + (noise.getVolume()/12241.0) + (0)) + 100);
+        double pulseOut = 95.88 / ((8128 / (double) (pulse1.getVolume() + pulse2.getVolume())) + 100);
 
+        double tndOut =
+               159.79 / (1 / ((triangle.getVolume() / 8227.0) + (noise.getVolume()/12241.0) + (0)) + 100);
 
-        return pulse_out + tnd_out;
+        return pulseOut + tndOut;
     }
 
     /**
@@ -331,6 +341,18 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
 
         }
 
+    }
+
+    /**
+     * This is called in the constructor and simply generates the values for the lookup tables
+     */
+    private void generateLookups() {
+        for(int i = 0; i < pulseLookup.length; i++) {
+            pulseLookup[i] = 95.52 / (8128.0 / i + 100.0);
+        }
+        for(int i = 0; i < tndLookup.length; i++) {
+            tndLookup[i] = 163.67 / (24329.0 / i + 100.0);
+        }
     }
 
 
