@@ -45,4 +45,19 @@ public class LinearCounter implements Sequencer.SequencerListener {
 
 
     }
+
+    /**
+     * Resets the linear counter to the power-up state (Hard reset)
+     * Count is 0,
+     * Control flag is cleared,
+     * reload value is 0,
+     * halt is false
+     */
+    public void reset() {
+        count = 0;
+        controlFlag = false;
+        reloadValue = 0;
+        halt = false;
+    }
+
 }

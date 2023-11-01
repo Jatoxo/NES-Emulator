@@ -95,4 +95,27 @@ public class PulseChannel {
         return envelope.getVolume();
     }
 
+
+    /**
+     * Resets the channel to the power-up state (Hard reset)
+     */
+    public void reset() {
+        //Disable length counter (Also resets count)
+        lengthCounter.setEnabled(false);
+        lengthCounter.setHalt(false);
+
+        //Reset duty cycle sequence and step
+        dutySequencer.switchSequence(0);
+        dutySequencer.reset();
+
+        //Reset envelope (No loop, not disabled, divider period 0)
+        envelope.reset();
+
+        //Disable & Reset Sweep unit
+        sweep.reset();
+
+        //Reset timer
+        timerDivider.setPeriod(0);
+        timerDivider.reset();
+    }
 }

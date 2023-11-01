@@ -4,7 +4,7 @@ public class Sweep implements Sequencer.SequencerListener {
 
     Divider divider = new Divider(0);
 
-    Divider pulseTimerDivider;
+    private Divider pulseTimerDivider;
 
     private boolean sweepRegWrite = false;
 
@@ -21,6 +21,19 @@ public class Sweep implements Sequencer.SequencerListener {
         this.pulseTimerDivider = pulseTimerDivider;
     }
 
+    /**
+     * Resets the sweep unit to its power-up state:
+     * Disables the sweep,
+     * Sets divider period to 0,
+     * Negate mode is off,
+     * shift count is 0
+     */
+    public void reset() {
+        setEnabled(false);
+        divider.setPeriod(0);
+        setNegate(false);
+        setShiftCount(0);
+    }
 
 
     //Returns the target period

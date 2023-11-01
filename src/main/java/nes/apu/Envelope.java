@@ -40,4 +40,22 @@ public class Envelope implements Sequencer.SequencerListener {
             }
         }
     }
+
+    /**
+     * Resets this envelope unit to its power-up state:
+     * Loop is disabled,
+     * Envelope is enabled,
+     * count is set to 0,
+     * divider period is set to 0
+     */
+    public void reset() {
+        //Also reset the temp value used for detecting writes
+        reset = false;
+
+        loop = false;
+        disabled = false;
+        divider.setPeriod(0);
+    }
+
+
 }

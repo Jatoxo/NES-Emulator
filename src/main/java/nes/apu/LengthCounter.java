@@ -4,7 +4,7 @@ public class LengthCounter implements Sequencer.SequencerListener {
 
     private boolean halt = false;
 
-    private boolean enabled = true; //Todo: Startup state?
+    private boolean enabled = false;
 
     private int count = 0;
 

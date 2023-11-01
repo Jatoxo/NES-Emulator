@@ -9,7 +9,7 @@ public class NoiseChannel {
 
 
     //15-Bit shifter used to generate "random" on/off values
-    private int randomShifter = 1;
+    private int randomShifter = 1 << 14; //One bit is shifted in at startup
 
     //Determines the random shifter mode
     private boolean mode = false;
@@ -82,6 +82,26 @@ public class NoiseChannel {
             //Set bit 14 to the new bit
             randomShifter |= (newBit ? 1 : 0) << 14;
         }
+    }
+
+    /**
+     * Resets the channel to the power-up state (Hard reset)
+     */
+    public void reset() {
+        //Disable length counter (Also resets count)
+        lengthCounter.setEnabled(false);
+        lengthCounter.setHalt(false);
+
+        //Reset noise mode & shifter
+        mode = false;
+        randomShifter = 1 << 14;
+
+        //Reset envelope (No loop, not disabled, divider period 0)
+        envelope.reset();
+
+        //Reset timer
+        setPeriodByIndex(0);
+        timerDivider.reset();
     }
 
 

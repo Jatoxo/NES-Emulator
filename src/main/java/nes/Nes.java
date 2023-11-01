@@ -103,6 +103,7 @@ public class Nes {
 	public void reset() {
 		cpu.reset();
 		ppu.reset();
+		apu.reset();
 	}
 
 	public void insertCartridge(Cartridge cart) {
@@ -123,8 +124,7 @@ public class Nes {
 
 		ppu.connectCartridge(cartridge);
 
-		cpu.reset();
-		ppu.reset();
+		reset();
 
 		try {
 			sleep(50);

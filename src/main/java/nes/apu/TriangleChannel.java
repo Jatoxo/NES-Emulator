@@ -49,4 +49,20 @@ public class TriangleChannel {
             }
         }
     }
+
+
+    /**
+     * Resets the channel to the power-up state (Hard reset)
+     */
+    public void reset() {
+        //Disable length counter (Also resets count)
+        lengthCounter.setEnabled(false);
+        lengthCounter.setHalt(false);
+
+        linearCounter.reset();
+
+        //Reset timer
+        timerDivider.setPeriod(0);
+        timerDivider.reset();
+    }
 }

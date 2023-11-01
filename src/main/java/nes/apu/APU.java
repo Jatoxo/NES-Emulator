@@ -20,7 +20,7 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
 
 
     //Whether interrupts are generated
-    private boolean inhibitInterrupts = true; //Initial value?
+    private boolean inhibitInterrupts = false;
 
     //Whether an interrupt is currently triggered
     private boolean triggerInterrupt = false;
@@ -341,6 +341,29 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
 
         }
 
+    }
+
+
+    /**
+     * Reset to state at power-on (Hard reset)
+     */
+    //TODO: Add soft reset
+    public void reset() {
+        //$4017 is 0, 4-step Sequence and interrupts allowed
+        frameSequencer.switchSets(0);
+        frameSequencer.reset();
+        inhibitInterrupts = false;
+
+
+
+        //$4015 is 0, all channels are disabled and interrupt flags are clear
+        //Todo: Reset DMC
+        triggerInterrupt = false;
+
+        pulse1.reset();
+        pulse2.reset();
+        triangle.reset();
+        noise.reset();
     }
 
     /**
