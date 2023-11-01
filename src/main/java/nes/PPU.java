@@ -600,6 +600,9 @@ public class PPU extends BusDevice implements Tickable {
 			//Get the byte which describes the color from palette ram
 			int colorByte = palleteRam[paletteIndex];
 
+			//Mask to 6 Bits (Upper two bits of color are ignored)
+			colorByte &= 0b11_1111;
+
 			//Look up the RGB value for this byte from the palette
 			int rgbOut = palette.colors[colorByte].getRGB();
 

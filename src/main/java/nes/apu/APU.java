@@ -72,7 +72,7 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
         //For now just call the function as much as possible when needed lol
         if(triggerInterrupt) {
             nes.cpu.raiseIRQ();
-            triggerInterrupt = false;
+            //triggerInterrupt = false;
         }
 
         pulse1.clockTimer();
@@ -99,7 +99,7 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
             triggerInterrupt = false;
 
             boolean pulse1enabled = pulse1.lengthCounter.getCount() > 0;
-            boolean pulse2enabled = pulse1.lengthCounter.getCount() > 0;
+            boolean pulse2enabled = pulse2.lengthCounter.getCount() > 0;
             boolean triangleEnabled = triangle.lengthCounter.getCount() > 0;
             boolean noiseEnabled = noise.lengthCounter.getCount() > 0;
 

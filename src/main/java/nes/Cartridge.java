@@ -86,7 +86,7 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 
 	@Override
 	public int read(int addr) {
-		return (byte) mapper.cpuRead(addr & 0xFFFF);
+		return mapper.cpuRead(addr & 0xFFFF) & 0xFF;
 	}
 
 	@Override

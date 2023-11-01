@@ -31,6 +31,13 @@ public class TriangleChannel {
 
     public int getVolume() {
 
+        //At the lowest two periods ($400B = 0 and $400A = 0 or 1), the resulting
+        //frequency is so high that the DAC effectively outputs a value half-way between
+        //7 and 8.
+        if(timerDivider.getPeriod() <= 1) {
+            return 7;
+        }
+
         //The triangle channel always outputs the value of the sequencer
         //Even if the length/linear counters are zero
         return sequencer.getVolume();

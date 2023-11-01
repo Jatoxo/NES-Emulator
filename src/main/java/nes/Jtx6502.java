@@ -80,12 +80,10 @@ public class Jtx6502 implements Tickable {
 	}
 
 	public void raiseIRQ() {
-		System.out.println("IRQ raised");
+		//System.out.println("IRQ raised");
 		//TODO: This needs work. Interrupt is level sensitive, so someone might call this function but only afterwards
 		// the inhibit flag gets cleared. In that case an interrupt still needs to be triggered.
 		raiseIRQ = true;
-
-
 	}
 
 	public void logCpuState() {
@@ -111,7 +109,7 @@ public class Jtx6502 implements Tickable {
 		if(cycles == 0 && raiseNMI) {
 			raiseNMI = false;
 			nmi();
-		} else if(cycles == 0 && raiseIRQ) {
+		} else if(cycles == 0 && raiseIRQ && getFlag(I) == 0) {
 			raiseIRQ = false;
 			irq();
 		} else if(cycles == 0) {
@@ -716,8 +714,11 @@ public class Jtx6502 implements Tickable {
 	}
 
 	public void irq() { //Interrupt request signal
+		System.out.println("IRQ");
 
 		//If interrupts are allowed
+		//Not necessary anymore since the check needs to be in clockcycle too
+		//(Redo IRQ stuff pls=
 		if(getFlag(I) == 0) {
 			System.out.println("--------------   IRQ      ----------------------");
 
