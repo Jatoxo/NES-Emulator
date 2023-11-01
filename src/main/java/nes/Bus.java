@@ -27,7 +27,7 @@ public class Bus {
 		for(BusDevice device : busDevicesArray) {
 			if(addr >= device.addrStart && addr <= device.addrEnd) {
 				device.write(addr, data & 0xFF);
-				return;
+				//return;
 			}
 		}
 
@@ -36,7 +36,15 @@ public class Bus {
 	public int read(int addr, boolean bReadOnly) {
 		for(BusDevice device : busDevicesArray) {
 			if(addr >= device.addrStart && addr <= device.addrEnd) {
-				return device.read(addr) & 0xFF;
+				int value = device.read(addr);
+				if(value == -1) {
+					//This is here so that a device can return -1 if it cannot be read
+					//Specifically the APU returns this when reading anything other than $4015, because the controllers
+					//are mapped to the same range.
+					//Todo: Figure out something better for overlapping memory locations4
+					continue;
+				}
+				return value & 0xFF;
 			}
 		}
 

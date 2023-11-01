@@ -48,13 +48,14 @@ public class Nes {
 		audio = new Audio(apu);
 
 		cpu.bus.addBusDevice(new Memory());
+		cpu.bus.addBusDevice(apu); //Fixme: This needs to be before controllers because otherwise controllers catch writes for $4017. Fix this properly
 
 		controllerPorts = new ControllerPorts();
 		cpu.bus.addBusDevice(controllerPorts);
 		connectController(new StandardController(), 0);
 
 		cpu.bus.addBusDevice(ppu);
-		cpu.bus.addBusDevice(apu);
+
 
 		/*
 		clock = new Clock(Clock.NTSC_MASTER_CLOCK_SPEED);

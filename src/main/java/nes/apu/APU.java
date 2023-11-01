@@ -118,7 +118,8 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
 
             return result;
         }
-        return 0;
+
+        return -1;
     }
 
     @Override
