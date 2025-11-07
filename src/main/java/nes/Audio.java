@@ -74,16 +74,12 @@ public class Audio implements Tickable {
     public void tick() {
         double audioValue = apu.getVolume();
 
-
         int sampleValue;
-
 
         sampleValue = (int) (audioValue * 0x7FFF);
 
-
         byte low = (byte) (sampleValue & 0xFF);
         byte high = (byte) ((sampleValue & 0x7F00) >>> 8);
-
 
         buffer[bufferIndex] = low;
         buffer[bufferIndex + 1] = high;
@@ -91,28 +87,20 @@ public class Audio implements Tickable {
 
         //Todo: Figure out how to properly buffer samples and avoid underrun pops
 
-
-
-
-
         int buffered = line.getBufferSize() - line.available();
 
-
-
-
         if(buffered < BUFFER_SIZE) {
-            line.write(buffer, bufferIndex - 2, 2);
+            //line.write(buffer, bufferIndex - 2, 2);
         }
-
 
         if(bufferIndex >= buffer.length) {
             bufferIndex = 0;
 
             if(buffered > BUFFER_SIZE) {
                 //This is supposed to make the audio catch up if it's too slow by skipping some samples
-                //line.write(buffer, 0, Math.min(line.available(), buffer.length - 1000));
+                //line.write(buffer, 0, Math.min(line.available(), buffer.length - 5000));
             } else {
-                //line.write(buffer, 0, buffer.length);
+                line.write(buffer, 0, buffer.length);
             }
 
 

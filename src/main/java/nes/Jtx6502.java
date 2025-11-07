@@ -109,7 +109,7 @@ public class Jtx6502 implements Tickable {
 		if(cycles == 0 && raiseNMI) {
 			raiseNMI = false;
 			nmi();
-		} else if(cycles == 0 && raiseIRQ && getFlag(I) == 0) {
+		} else if(raiseIRQ && cycles == 0 && getFlag(I) == 0) {
 			raiseIRQ = false;
 			irq();
 		} else if(cycles == 0) {

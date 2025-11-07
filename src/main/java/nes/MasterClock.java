@@ -31,7 +31,7 @@ public class MasterClock {
 
         if(cpuStep == 0) {
             cpuStep = 12;
-            cpu.tick();
+            cpu.clockCycle();
             apu.tick();
         }
         cpuStep--;

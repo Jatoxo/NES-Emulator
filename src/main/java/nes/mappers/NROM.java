@@ -72,7 +72,7 @@ public class NROM extends Mapper {
 
 	@Override
 	public void ppuWrite(int address, int data) {
-		System.out.printf("Trying to write to ROM at %s... Yea...\n", Integer.toHexString(address));
+		System.out.printf("NROM: Write to CHR ROM at %s...\n", Integer.toHexString(address));
 
 		//Do it anyway lol
 		chrRom[address] = (byte) data;

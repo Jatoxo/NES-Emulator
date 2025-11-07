@@ -176,11 +176,14 @@ public class GUI extends JFrame {
 		menuBar.add(fileMenu);
 
 		JMenu emuMenu = new JMenu("Emulation");
+		JMenuItem resetOption = new JMenuItem("Reset");
+		emuMenu.add(resetOption);
 		JMenuItem pauseItem = new JMenuItem("Pause");
 		emuMenu.add(pauseItem);
 		JMenuItem speedItem = new JMenuItem("Set maximum speed...");
 		emuMenu.add(speedItem);
 
+		resetOption.addActionListener(e -> nes.reset());
 
 		emuMenu.add(pauseItem);
 
