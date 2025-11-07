@@ -6,14 +6,13 @@ import nes.Tickable;
 
 public class APU extends BusDevice implements Tickable, Sequencer.SequencerListener {
 
+    private final PulseChannel pulse1 = new PulseChannel(0);
+    private final PulseChannel pulse2 = new PulseChannel(1);
+    private final TriangleChannel triangle = new TriangleChannel();
+    private final NoiseChannel noise = new NoiseChannel();
+
     //Sequencer responsible for ticking other components
-    public final FrameSequencer frameSequencer = new FrameSequencer();
-
-    private final PulseChannel pulse1 = new PulseChannel(frameSequencer, 0);
-    private final PulseChannel pulse2 = new PulseChannel(frameSequencer, 1);
-    private final TriangleChannel triangle = new TriangleChannel(frameSequencer);
-    private final NoiseChannel noise = new NoiseChannel(frameSequencer);
-
+    public final FrameSequencerer frameSequencer = new FrameSequencerer(this, pulse1, pulse2, triangle, noise);
 
 
     private final Nes nes;
@@ -39,7 +38,7 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
         this.nes = nes;
 
         //Listen to the IRQ sequence to trigger IRQs with the CPU
-        frameSequencer.addListener(FrameSequencer.INTERRUPTS, this);
+        //frameSequencer.addListener(FrameSequencer.INTERRUPTS, this);
 
         //Generate the Mixing lookup tables
         generateLookups();
@@ -89,6 +88,7 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
 
     @Override
     public int read(int addr) {
+        //System.out.print(Integer.toHexString(addr) + " -> ");
 
         if(addr == 0x4015) {
             int result = 0;
@@ -116,6 +116,7 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
                 result |= 0b0000_1000;
             }
 
+            //System.out.println(result);
             return result;
         }
 
@@ -124,7 +125,6 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
 
     @Override
     public void write(int addr, int data) {
-        //System.out.println(Integer.toHexString(addr));
 
         //0x4000 - 0x4007 Pulse 1 & Pulse 2
         if(addr <= 0x4007) {
@@ -329,7 +329,8 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
                 }
 
                 int sequencerMode = data >>> 7;
-                frameSequencer.switchSets(sequencerMode);
+                frameSequencer.setMode(sequencerMode);
+                //frameSequencer.switchSets(sequencerMode);
 
                 //If the mode flag is clear, the 4-step sequence is selected, otherwise the
                 //5-step sequence is selected and the sequencer is immediately clocked once.
@@ -351,7 +352,8 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
     //TODO: Add soft reset
     public void reset() {
         //$4017 is 0, 4-step Sequence and interrupts allowed
-        frameSequencer.switchSets(0);
+        //frameSequencer.switchSets(0);
+        frameSequencer.setMode(0);
         frameSequencer.reset();
         inhibitInterrupts = false;
 
@@ -386,7 +388,7 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
         if(inhibitInterrupts) {
             return;
         }
-
+        //System.out.println("Set interrupt flag");
         triggerInterrupt = true;
         nes.cpu.raiseIRQ();
     }

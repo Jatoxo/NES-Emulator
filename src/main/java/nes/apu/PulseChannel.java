@@ -34,14 +34,14 @@ public class PulseChannel {
     //The second channel's sweep unit has slightly different behaviour
     boolean secondPulse;
 
-    public PulseChannel(FrameSequencer frameSequencer, int id) {
+    public PulseChannel(int id) {
         secondPulse = id == 1;
         sweep.enableAltBehaviour(secondPulse);
 
         //The frame sequencer clocks the Envelope, Length Counter and Sweep
-        frameSequencer.addListener(FrameSequencer.ENVELOPES, envelope);
-        frameSequencer.addListener(FrameSequencer.LENGTH_SWEEPS, lengthCounter);
-        frameSequencer.addListener(FrameSequencer.LENGTH_SWEEPS, sweep);
+        //frameSequencer.addListener(FrameSequencer.ENVELOPES, envelope);
+        //frameSequencer.addListener(FrameSequencer.LENGTH_SWEEPS, lengthCounter);
+        //frameSequencer.addListener(FrameSequencer.LENGTH_SWEEPS, sweep);
 
         //Pulse channel has 4 different sequences
         /*

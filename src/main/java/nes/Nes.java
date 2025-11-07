@@ -67,8 +67,6 @@ public class Nes {
 		*/
 		clock = new MasterClock(cpu, ppu, apu, audio);
 
-		//apu.setSequencerClock(clock);
-
 		//insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
 
 		//MM 2869

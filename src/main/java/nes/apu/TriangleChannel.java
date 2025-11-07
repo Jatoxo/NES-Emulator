@@ -15,15 +15,12 @@ public class TriangleChannel {
 
 
 
-
-
-
-    public TriangleChannel(FrameSequencer frameSequencer) {
+    public TriangleChannel() {
         //The APU frame sequencer
 
-        frameSequencer.addListener(FrameSequencer.LENGTH_SWEEPS, lengthCounter);
+        //frameSequencer.addListener(FrameSequencer.LENGTH_SWEEPS, lengthCounter);
         //Linear counter gets clocked the same as envelopes
-        frameSequencer.addListener(FrameSequencer.ENVELOPES, linearCounter);
+        //frameSequencer.addListener(FrameSequencer.ENVELOPES, linearCounter);
 
 
     }

@@ -18,10 +18,10 @@ public class NoiseChannel {
             0x004,0x008,0x010,0x020,0x040,0x060,0x080,0x0A0,0x0CA,0x0FE,0x17C,0x1FC,0x2FA,0x3F8,0x7F2,0xFE4
     };
 
-    public NoiseChannel(FrameSequencer frameSequencer) {
+    public NoiseChannel() {
 
-        frameSequencer.addListener(FrameSequencer.ENVELOPES, envelope);
-        frameSequencer.addListener(FrameSequencer.LENGTH_SWEEPS, lengthCounter);
+        //frameSequencer.addListener(FrameSequencer.ENVELOPES, envelope);
+        //frameSequencer.addListener(FrameSequencer.LENGTH_SWEEPS, lengthCounter);
 
     }
 
