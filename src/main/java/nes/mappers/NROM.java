@@ -13,11 +13,21 @@ public class NROM extends Mapper {
 	//On NROM cartridges, the mirroring mode is hardwired to either horizontal or vertical
 	private final MirrorMode mirrorMode;
 
+	private final boolean usesChrRam;
+
 
 	public NROM(byte[] prgRom, byte[] chrRom, MirrorMode mirrorMode) {
 		super(NROM);
+
+		//If no CHR ROM is present, use 8kb CHR RAM
+		this.usesChrRam = chrRom == null;
+		if(usesChrRam) {
+			this.chrRom = new byte[8192];
+		} else {
+			this.chrRom = chrRom;
+		}
 		this.prgRom = prgRom;
-		this.chrRom = chrRom;
+
 		this.mirrorMode = mirrorMode;
 	}
 
@@ -43,8 +53,9 @@ public class NROM extends Mapper {
 
 	@Override
 	public void cpuWrite(int address, int data) {
+
 		//TODO: Tie together logic for reading and writing
-		//System.out.println("Trying to write to ROM... Yea...");
+		System.out.println("Trying to write to ROM... Yea...");
 
 		//Prg Rom starts at 0x8000
 		if(address < 0x8000) {
@@ -60,7 +71,8 @@ public class NROM extends Mapper {
 			address &= 0x3FFF;
 		}
 
-		prgRom[address] = (byte) data;
+		//How about no
+		//prgRom[address] = (byte) data;
 	}
 
 	@Override
@@ -72,10 +84,11 @@ public class NROM extends Mapper {
 
 	@Override
 	public void ppuWrite(int address, int data) {
-		System.out.printf("NROM: Write to CHR ROM at %s...\n", Integer.toHexString(address));
+		//System.out.printf("NROM: Write to CHR ROM at %s...\n", Integer.toHexString(address));
 
-		//Do it anyway lol
-		chrRom[address] = (byte) data;
+		if(usesChrRam) {
+			chrRom[address] = (byte) data;
+		}
 	}
 
 	@Override

@@ -140,7 +140,7 @@ public class INESRom extends ROM {
     public byte[] getCharacterRom() {
         if(header.chrRomChunks == 0) {
             //If the ROM specifies 0 chunks of CHR ROM, it means that the cartridge uses CHR RAM instead, and 8kb is to be assumed
-            return new byte[8192];
+            return null;
         }
 
         byte[] chrRom = new byte[header.chrRomChunks * 8192];

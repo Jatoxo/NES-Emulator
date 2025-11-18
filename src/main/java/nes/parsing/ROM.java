@@ -24,6 +24,9 @@ public abstract class ROM {
 
     public abstract byte[] getProgramRom();
 
+    /**
+     * Return the CHR ROM or null if none is present
+     */
     public abstract byte[] getCharacterRom();
 
     public byte[] data;

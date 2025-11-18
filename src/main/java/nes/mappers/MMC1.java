@@ -322,7 +322,10 @@ public class MMC1 extends Mapper {
     @Override
     public void ppuWrite(int address, int data) {
         //System.out.printf("Trying to write to CHR ROM at %s...\n", Integer.toHexString(address));
-
+        if(true) {
+            return;
+            //TODO: I don't think this should ever work on MMC1?
+        }
         int[] location = mapPPUAddress(address);
 
         int bank = location[0];
