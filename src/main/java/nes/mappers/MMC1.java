@@ -87,7 +87,7 @@ public class MMC1 extends Mapper {
         if(address >= 0x6000 && address <= 0x7FFF) {
             //System.out.println("Read from Cartridge");
 
-            return prgRam[address & 0x1FFF];
+            return Byte.toUnsignedInt(prgRam[address & 0x1FFF]);
 
         } else if(address >= 0x8000 && address <= 0xBFFF) {
             //First bank of program rom
@@ -102,14 +102,14 @@ public class MMC1 extends Mapper {
                     //Bank is 4-Bit value. Lower bit is ignored in this 32kb chunk mode
                     byte bankSelect = (byte) (getCurrentProgramBank() & 0b1110);
 
-                    return prgRom[bankSelect][bankAddress];
+                    return Byte.toUnsignedInt(prgRom[bankSelect][bankAddress]);
                 case 2:
                     //This bank is fixed to the first bank in this mode
-                    return prgRom[0][bankAddress];
+                    return Byte.toUnsignedInt(prgRom[0][bankAddress]);
 
                 case 3:
                     //Bank is switched to the one selected by control register in this mode
-                    return prgRom[getCurrentProgramBank()][bankAddress];
+                    return Byte.toUnsignedInt(prgRom[getCurrentProgramBank()][bankAddress]);
             }
 
 
@@ -127,20 +127,20 @@ public class MMC1 extends Mapper {
                     //Adding one since this is the second bank of the two 16kb chunks
                     byte bankSelect = (byte) ((getCurrentProgramBank() & 0b1110) + 1);
 
-                    return prgRom[bankSelect][bankAddress];
+                    return Byte.toUnsignedInt(prgRom[bankSelect][bankAddress]);
                 case 2:
                     //Bank is switched to the one selected by control register in this mode
-                    return prgRom[getCurrentProgramBank()][bankAddress];
+                    return Byte.toUnsignedInt(prgRom[getCurrentProgramBank()][bankAddress]);
 
                 case 3:
                     //This bank is fixed to the last bank in this mode
-                    return prgRom[prgRom.length -1][bankAddress];
+                    return Byte.toUnsignedInt(prgRom[prgRom.length -1][bankAddress]);
             }
 
         }
 
 
-        return 0;
+        return -1;
     }
 
     @Override

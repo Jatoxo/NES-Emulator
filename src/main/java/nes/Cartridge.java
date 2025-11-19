@@ -46,6 +46,7 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 	) {
 		//Cartridge space is 0x4020 - 0xFFFF on the CPU bus
 		super(0x4020, 0xFFFF);
+		//Todo: Maybe Catridge shouldn't be a bus device, rather just the individual memory chips / mappers?
 
 		this.sourceROM = source;
 		this.pgrRomChunks = pgrRomChunks;
@@ -86,7 +87,7 @@ public class Cartridge extends BusDevice implements PPUBusDevice{
 
 	@Override
 	public int read(int addr) {
-		return mapper.cpuRead(addr & 0xFFFF) & 0xFF;
+		return mapper.cpuRead(addr & 0xFFFF);
 	}
 
 	@Override

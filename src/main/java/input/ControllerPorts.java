@@ -49,12 +49,17 @@ public class ControllerPorts extends BusDevice {
 			player.poll();
 		}
 
-		return player.read() & 0x1f; //Mask 4 least sig. bits since only they are used
+		//Mask 4 least sig. bits since only they are used
+		int value = player.read() & 0x1F;
+
+		//Indicate upper 4 bits are not set (remain open bus)
+		//(Bit 8-15 are used by bus as a bitmask to determine this)
+		return value | (0b1111 << 8);
 	}
 
 	@Override
 	public void write(int addr, int data) {
-		boolean newWrite = (data&1) > 0;
+		boolean newWrite = (data & 1) > 0;
 
 		//When the latch is no longer set the shift registers maintain the controllers' state at that moment
 		if(lastWrite && !newWrite) {

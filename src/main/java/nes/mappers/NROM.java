@@ -35,7 +35,7 @@ public class NROM extends Mapper {
 	public int cpuRead(int address) {
 		//Prg Rom starts at 0x8000
 		if(address < 0x8000) {
-			return 0;
+			return -1;
 		}
 
 		//Mask out to be in cartridge address

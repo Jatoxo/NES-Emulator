@@ -23,10 +23,10 @@ public class AxROM extends Mapper {
             int bankAddress = address & 0x7FFF;
             address = selectedBank << 15 | bankAddress;
 
-            return programRom[address % programRom.length];
+            return Byte.toUnsignedInt(programRom[address % programRom.length]);
         }
 
-        return 0;
+        return -1;
     }
 
     @Override
@@ -44,7 +44,7 @@ public class AxROM extends Mapper {
 
     @Override
     public int ppuRead(int address) {
-        return chrRam[address];
+        return Byte.toUnsignedInt(chrRam[address]);
     }
 
     @Override
