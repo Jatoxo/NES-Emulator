@@ -49,6 +49,9 @@ public class PPU extends BusDevice implements Tickable {
 
 	private final CIRAM ciram;
 
+	private int ioBus = 0;
+	private long ioBusRefreshedCycle = 0;
+
 
 
 	public static final int PPUCTRL = 0x2000;
@@ -436,7 +439,7 @@ public class PPU extends BusDevice implements Tickable {
 
 			if(ppuCtrl.isSet(CTRL_V)) {
 				//Fixed: This shouldn't be allowed to stop the cpu during executing an instruction, it should wait until it is finished
-				//Due to the current implementation, this might work fine. Instruction are executed whole and the the cpu idle cycles until the correct amount
+				//Due to the current implementation, this might work fine. Instruction are executed whole and the cpu idle cycles until the correct amount
 				//of cycles for each instruction has passed. The only side effect of doing it this way is that the nmi may be called earlier than intended during the cpu's
 				//idle cycles
 				nes.cpu.raiseNMI();
@@ -906,8 +909,7 @@ public class PPU extends BusDevice implements Tickable {
 			if((addr & 0x3) == 0) {
 				addr &= 0xF;
 			}
-
-			return palleteRam[addr] & 0xFF;
+			return palleteRam[addr] & 0b0011_1111;
 		}
 
 		return ppuBus.read(addr) & 0xFF;
@@ -940,6 +942,10 @@ public class PPU extends BusDevice implements Tickable {
 	//CPU Read
 	@Override
 	public int read(int addr) {
+		if(cyclesToTime(totalCycles - ioBusRefreshedCycle) > 0.5) {
+			//Todo: io bus decays after some time, research actual time?
+			ioBus = 0;
+		}
 
 		//PPU Registers only take up 8 bytes, so mask only the first 3 bits for mirroring
 		addr &= 0x7;
@@ -949,31 +955,42 @@ public class PPU extends BusDevice implements Tickable {
 		switch(addr) {
 			case PPUSTATUS:
 				writeToggle = 0;
-				val = ppuStatus.get();
+				val = ppuStatus.get() & 0b1110_0000;
 				ppuStatus.value &= 0x7f; //Bit 7 is cleared
 
-				return val;
+
+				//Clear only upper three bits of I/O bus
+				ioBus &= ~0b1110_0000;
+				ioBus |= val;
+				ioBusRefreshedCycle = totalCycles;
+
+				return ioBus;
 
 			case PPUDATA:
+
 				//When reading from a location that isn't pallete RAM or it's mirrors, there is a buffer that gets returned and filled only afterwards
 				if(vAddr.get() < PALLETE_RAM_INDEX_START) {
 					val = readBuffer;
 
 					readBuffer = ppuRead(vAddr.get());
 
-
-
+					ioBus = val;
 				} else {
 					val = ppuRead(vAddr.get());
 
 					//Internal read buffer "bypasses" the color index ram and reads from the underlying memory instead (probably CIRAM)
 					readBuffer = ppuBus.read(vAddr.get());
+
+					ioBus &= 0b1100_0000;
+					ioBus |= val;
 				}
 
 				//Increment PPU address depending on PPUCTRL flag
 				vAddr.set(vAddr.get() + ((ppuCtrl.isSet(CTRL_I)) ? 32 : 1));
 
-				return val;
+
+				ioBusRefreshedCycle = totalCycles;
+				return ioBus;
 
 			case OAMDATA:
 				//During the first 64 cycles of every visible scanline, secondary OAM is initialized to 0xFF
@@ -982,15 +999,18 @@ public class PPU extends BusDevice implements Tickable {
 				//https://www.nesdev.org/wiki/PPU_sprite_evaluation#:~:text=to%20draw%20them.-,Details,-During%20all%20visible
 				if(scanline >= 0 && scanline <= 239) { //Is in visible scanline
 					if(scanlineCycle >= 1 && scanlineCycle <= 64) { //Is in first 64 cycles
+						ioBus = 0xFF; //Todo: Does this also change ioBus..?
 						return 0xFF;
 					}
 				}
-				return OAM[oamAddr.get()] & 0xFF;
+				ioBus = OAM[oamAddr.get()] & 0xFF;
+				ioBusRefreshedCycle = totalCycles;
+				return ioBus;
 
 		}
 
 
-		return 0;
+		return ioBus;
 	}
 
 	//CPU Write
@@ -1002,13 +1022,14 @@ public class PPU extends BusDevice implements Tickable {
 
 		data &= 0xFF;
 
+		ioBus = data;
+		ioBusRefreshedCycle = totalCycles;
+
 		int val;
 		switch(addr) {
 			case PPUCTRL:
 				//Mask out the bits that are set in t register because why the fuck not
 				ppuCtrl.set(data & ~0x3);
-
-
 
 				//The lower two bits select the nametable, this gets saved in the t register
 				val = tAddr.get();
@@ -1110,10 +1131,17 @@ public class PPU extends BusDevice implements Tickable {
 	}
 
 
+	// NES PPU clock in Hz
+	private static final double PPU_CLOCK_HZ = 5_369_318.0;
+	private static double cyclesToTime(long cycles) {
+		return cycles / PPU_CLOCK_HZ;
+	}
+
 	@Override
 	public void tick() {
 		clock();
 	}
+
 
 	public void connectCartridge(Cartridge cartridge) {
 		this.cartridge = cartridge;
