@@ -31,12 +31,12 @@ public class BusWatcher extends nes.BusDevice {
 
         cycleHistory.add(new CPUTest.Cycle(addr, value, true));
 
-        return value;
+        return Byte.toUnsignedInt(value);
     }
 
     @Override
     public void write(int addr, int data) {
         setRamValue(addr, (byte) data);
-        cycleHistory.add(new CPUTest.Cycle(addr, (byte) data, true));
+        cycleHistory.add(new CPUTest.Cycle(addr, (byte) data, false));
     }
 }

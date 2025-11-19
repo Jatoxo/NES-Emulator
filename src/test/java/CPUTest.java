@@ -60,7 +60,7 @@ public class CPUTest {
 
             HarteTest harteTest = getTest(testObj);
 
-            boolean success = runTest(harteTest, true);
+            boolean success = runTest(harteTest, false);
 
             if(!success) {
                 System.out.println("Test " + harteTest.name + " failed!");
@@ -209,13 +209,13 @@ public class CPUTest {
             System.out.println("Expected cycles:");
             System.out.println("------------------");
             for(Cycle cycle : test.cycles) {
-                System.out.println(cycle.address + " " + cycle.value + " " + cycle.read);
+                System.out.println(cycle);
             }
             System.out.println("------------------");
             System.out.println("Actual cycles:");
             System.out.println("------------------");
             for(Cycle cycle : busWatcher.cycleHistory) {
-                System.out.println(cycle.address + " " + cycle.value + " " + cycle.read);
+                System.out.println(cycle);
             }
             System.out.println("------------------");
 
@@ -315,6 +315,11 @@ public class CPUTest {
             this.address = address;
             this.value = value;
             this.read = read;
+        }
+
+        @Override
+        public String toString() {
+            return "$" + Integer.toHexString(address).toUpperCase() + " " + value + " " + (read ? "READ" : "WRITE");
         }
     }
 }
