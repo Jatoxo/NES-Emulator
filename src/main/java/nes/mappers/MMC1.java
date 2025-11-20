@@ -323,8 +323,8 @@ public class MMC1 extends Mapper {
 
         int[] location = mapPPUAddress(address);
 
-        int bank = location[0];
-        int index = location[1];
+        int bank = location[0] % chrRom.length;
+        int index = location[1] % chrRom[0].length;
 
         return chrRom[bank][index];
     }
@@ -332,14 +332,16 @@ public class MMC1 extends Mapper {
     @Override
     public void ppuWrite(int address, int data) {
         //System.out.printf("Trying to write to CHR ROM at %s...\n", Integer.toHexString(address));
-        if(true) {
+        if(!usesChrRam) {
             return;
             //TODO: I don't think this should ever work on MMC1?
+            // Update: Now I think it probably should!
         }
         int[] location = mapPPUAddress(address);
 
-        int bank = location[0];
-        int index = location[1];
+        int bank = location[0] % chrRom.length;
+        int index = location[1] % chrRom[0].length;
+
 
         chrRom[bank][index] = (byte) data;
     }
