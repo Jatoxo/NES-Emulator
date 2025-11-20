@@ -56,28 +56,17 @@ public class Nes {
 
 		cpu.bus.addBusDevice(ppu);
 
-
-		/*
-		clock = new Clock(Clock.NTSC_MASTER_CLOCK_SPEED);
-		clock.addListener(cpu, 12);
-		clock.addListener(apu, 12);
-		clock.addListener(audio, 487);
-
-		clock.addListener(ppu, 4); //ppu go brrrrrr
-		*/
 		clock = new MasterClock(cpu, ppu, apu, audio);
 
 		//insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
 
 		//MM 2869
 		//Cartridge cart = RomParser.parseRom("D:\\GamesSoftware\\ZZ Emulators\\NES\\Games\\Test\\apu_test.nes");
-		Cartridge cart = RomParser.parseRom("D:\\GamesSoftware\\ZZ Emulators\\NES\\Games\\mbr.nes");
+		//Cartridge cart = RomParser.parseRom("D:\\Emulators\\NES\\ROMs\\Best NES Games\\Mario\\Super Mario Bros. (World).nes");
 		//Cartridge cart = RomParser.parseRom("D:\\GamesSoftware\\ZZ Emulators\\NES\\Games\\NESroms\\USA\\Legend of Zelda, The (U) (PRG 0).nes");
+		Cartridge cart = RomParser.parseRom("rom/AccuracyCoin.nes");
+
 		insertCartridge(cart);
-
-
-
-
 	}
 
 	public void start() {

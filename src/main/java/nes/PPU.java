@@ -909,6 +909,7 @@ public class PPU extends BusDevice implements Tickable {
 			if((addr & 0x3) == 0) {
 				addr &= 0xF;
 			}
+			//Todo: Upper two bits should be open bus
 			return palleteRam[addr] & 0b0011_1111;
 		}
 

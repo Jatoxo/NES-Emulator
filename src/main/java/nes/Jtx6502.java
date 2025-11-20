@@ -783,7 +783,7 @@ public class Jtx6502 implements Tickable {
 	}
 
 	public void irq() { //Interrupt request signal
-		System.out.println("IRQ");
+		//System.out.println("IRQ");
 
 		//If interrupts are allowed
 		//Not necessary anymore since the check needs to be in clockcycle too

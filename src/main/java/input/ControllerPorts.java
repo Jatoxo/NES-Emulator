@@ -49,12 +49,12 @@ public class ControllerPorts extends BusDevice {
 			player.poll();
 		}
 
-		//Mask 4 least sig. bits since only they are used
+		//Mask 5 least sig. bits since only they are used
 		int value = player.read() & 0x1F;
 
-		//Indicate upper 4 bits are not set (remain open bus)
+		//Indicate upper 3 bits are not set (remain open bus)
 		//(Bit 8-15 are used by bus as a bitmask to determine this)
-		return value | (0b1111 << 8);
+		return value | (0b0001_1111 << 8);
 	}
 
 	@Override
