@@ -19,6 +19,7 @@ import java.util.LinkedList;
 import java.util.Objects;
 
 
+
 public class GUI extends JFrame {
 
 
@@ -154,7 +155,7 @@ public class GUI extends JFrame {
 				}
 
 				int val = Math.round(cumulativeFPS / (float) size);
-				f.setTitle(EMU_NAME + " - FPS: " + val);
+				f.setTitle(EMU_NAME + " - FPS: "+ val);
 				try {
 					Thread.sleep(500);
 				} catch(InterruptedException e) {

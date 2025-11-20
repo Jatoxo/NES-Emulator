@@ -104,8 +104,6 @@ public class Jtx6502 implements Tickable {
 	}
 
 	public void clockCycle() {
-
-
 		if(cycles == 0 && raiseNMI) {
 			raiseNMI = false;
 			nmi();
@@ -122,15 +120,9 @@ public class Jtx6502 implements Tickable {
 
 			pc.increment();
 
-
 			//logCpuState();
 
-
-
-
-
 			cycles = currentInstruction.cycles;
-
 
 			executeInstruction(currentInstruction);
 			//index++;
@@ -367,6 +359,7 @@ public class Jtx6502 implements Tickable {
 				setFlag(N, (a.get() & 0x80) > 0);
 				break;
 			case LDX:
+
 				i = read(address);
 				x.set(i & 0xFF);
 				setFlag(Z, x.get() == 0);
@@ -618,6 +611,7 @@ public class Jtx6502 implements Tickable {
 				}
 				int hi = (read(pc.increment()) & 0xFF) << 8;
                 return low | hi;
+
 			case ADDR_ZP0:
                 return read(pc.increment()) & 0xFF;
 			case ADDR_ZPX:
