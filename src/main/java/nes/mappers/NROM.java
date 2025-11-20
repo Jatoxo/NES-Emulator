@@ -78,6 +78,7 @@ public class NROM extends Mapper {
 	@Override
 	public int ppuRead(int address) {
 		//CHR ROM starts at 0x0000, and is 8kb in size (0x0000 - 0x1FFF)
+		address &= 0x1FFF;
 		//CHR ROM will be disabled when bit 13 of the address is set (CIRAM is enabled)
 		return chrRom[address] & 0xFF;
 	}
@@ -85,8 +86,8 @@ public class NROM extends Mapper {
 	@Override
 	public void ppuWrite(int address, int data) {
 		//System.out.printf("NROM: Write to CHR ROM at %s...\n", Integer.toHexString(address));
-
 		if(usesChrRam) {
+			address &= 0x1FFF;
 			chrRom[address] = (byte) data;
 		}
 	}

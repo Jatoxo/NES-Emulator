@@ -3,7 +3,15 @@ package nes.mappers;
 public abstract class Mapper {
 	public static final int NROM = 0;
 	public static final int MMC1 = 1;
+	public static final int UXROM = 2;
+	public static final int CNROM = 3;
 	public static final int AXROM = 7;
+
+	public static final int SIZE_4KiB  = 1 << 12;
+	public static final int SIZE_8KiB  = 1 << 13;
+	public static final int SIZE_16KiB = 1 << 14;
+	public static final int SIZE_32KiB = 1 << 15;
+
 
 	public final int mapperId;
 
@@ -54,4 +62,22 @@ public abstract class Mapper {
 	}
 
 	public void setProgramRAM(byte[] newProgramRam) {}
+
+
+
+	public static int readBank(byte[] rom, int bankSize, int bankIndex, int address) {
+		//Mask out bits for bank address
+		address &= bankSize-1;
+
+		int bankStart = (bankIndex) * bankSize;
+		return Byte.toUnsignedInt(rom[bankStart + address]);
+	}
+
+	public static void writeBank(byte[] rom, int bankSize, int bankIndex, int address, int value) {
+		//Mask out bits for bank address
+		address &= bankSize-1;
+
+		int bankStart = (bankIndex) * bankSize;
+		rom[bankStart + address] = (byte) value;
+	}
 }

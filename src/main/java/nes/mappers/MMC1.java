@@ -43,6 +43,8 @@ public class MMC1 extends Mapper {
     // 1 : switch two separate 4 KB banks
     private boolean characterRom4kbMode = false;
 
+    private boolean usesChrRam;
+
 
 
     //Select 4 KB or 8 KB CHR bank at PPU $0000 (low bit ignored in 8 KB mode)
@@ -67,10 +69,18 @@ public class MMC1 extends Mapper {
 
         //Split the CHR ROM into 4kb chunks
         //chrChunks is amount of 8kb chunks, so we need to double it
-        this.chrRom = new byte[chrChunks * 2][4096];
-        for(int i = 0; i < chrChunks * 2; i++) {
-            System.arraycopy(chrRom, i * 4096, this.chrRom[i], 0, 4096);
+
+        this.usesChrRam = chrRom == null;
+
+        if(usesChrRam) {
+            this.chrRom = new byte[1][8192];
+        } else {
+            this.chrRom = new byte[chrChunks * 2][4096];
+            for(int i = 0; i < chrChunks * 2; i++) {
+                System.arraycopy(chrRom, i * 4096, this.chrRom[i], 0, 4096);
+            }
         }
+
     }
 
     /**
