@@ -14,9 +14,9 @@ public class Memory extends BusDevice {
 
 
 	@Override
-	public int read(int addr) {
+	public BusValue read(int addr) {
 		int ret = fakeRam[addr & (2048 - 1)];
-		return ret & 0xFF;
+		return new BusValue(ret);
 	}
 
 	@Override

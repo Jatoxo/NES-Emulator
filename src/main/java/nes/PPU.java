@@ -942,7 +942,7 @@ public class PPU extends BusDevice implements Tickable {
 
 	//CPU Read
 	@Override
-	public int read(int addr) {
+	public BusValue read(int addr) {
 		if(cyclesToTime(totalCycles - ioBusRefreshedCycle) > 0.5) {
 			//Todo: io bus decays after some time, research actual time?
 			ioBus = 0;
@@ -965,7 +965,7 @@ public class PPU extends BusDevice implements Tickable {
 				ioBus |= val;
 				ioBusRefreshedCycle = totalCycles;
 
-				return ioBus;
+				return new BusValue(ioBus);
 
 			case PPUDATA:
 
@@ -991,7 +991,7 @@ public class PPU extends BusDevice implements Tickable {
 
 
 				ioBusRefreshedCycle = totalCycles;
-				return ioBus;
+				return new BusValue(ioBus);
 
 			case OAMDATA:
 				//During the first 64 cycles of every visible scanline, secondary OAM is initialized to 0xFF
@@ -1001,17 +1001,17 @@ public class PPU extends BusDevice implements Tickable {
 				if(scanline >= 0 && scanline <= 239) { //Is in visible scanline
 					if(scanlineCycle >= 1 && scanlineCycle <= 64) { //Is in first 64 cycles
 						ioBus = 0xFF; //Todo: Does this also change ioBus..?
-						return 0xFF;
+						return new BusValue(0xFF);
 					}
 				}
 				ioBus = OAM[oamAddr.get()] & 0xFF;
 				ioBusRefreshedCycle = totalCycles;
-				return ioBus;
+				return new BusValue(ioBus);
 
 		}
 
 
-		return ioBus;
+		return new BusValue(ioBus);
 	}
 
 	//CPU Write

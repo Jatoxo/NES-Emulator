@@ -46,9 +46,9 @@ public class Bus {
 				continue;
 			}
 
-			int value = device.read(addr);
-			if(value == -1) {
-				//This is here so that a device can return -1 if it cannot be read
+			BusValue busValue = device.read(addr);
+			if(busValue == null) {
+				//This is here so that a device can return null if it cannot be read
 				//Specifically the APU returns this when reading anything other than $4015, because the controllers
 				//are mapped to the same range.
 				//Todo: Figure out something better for overlapping memory locations
@@ -57,10 +57,19 @@ public class Bus {
 				continue;
 			}
 
-			//Bits 8-15 should act as a bitmask for when not all bits have been set (Or 0 for all)
-			//(Controller ports don't update upper 3 bits for example)
-			int mask = (value >> 8) & 0xFF;
-			value &= 0xFF;
+			int value = busValue.value();
+			int mask = busValue.mask();
+
+			// This address specifically isn't supposed to update the bus, as it's cpu internal
+			// but bit 5 is still open bus
+			if(addr == 0x4015) {
+				value &= 0b1101_1111;
+				value |= openBus & 0b0010_0000;
+
+				return value;
+			}
+
+
 			if(mask == 0 || mask == 0xFF) {
 				openBus = value;
 			} else {

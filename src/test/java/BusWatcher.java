@@ -1,3 +1,5 @@
+import nes.BusValue;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -26,12 +28,12 @@ public class BusWatcher extends nes.BusDevice {
 
 
     @Override
-    public int read(int addr) {
+    public BusValue read(int addr) {
         byte value = getRamValue(addr);
 
         cycleHistory.add(new CPUTest.Cycle(addr, value, true));
 
-        return Byte.toUnsignedInt(value);
+        return new BusValue(Byte.toUnsignedInt(value));
     }
 
     @Override

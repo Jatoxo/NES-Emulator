@@ -1,6 +1,7 @@
 package nes.apu;
 
 import nes.BusDevice;
+import nes.BusValue;
 import nes.Nes;
 import nes.Tickable;
 
@@ -87,7 +88,7 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
 
 
     @Override
-    public int read(int addr) {
+    public BusValue read(int addr) {
         //System.out.print(Integer.toHexString(addr) + " -> ");
 
         if(addr == 0x4015) {
@@ -117,10 +118,12 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
             }
 
             //System.out.println(result);
-            return result;
+            //Bit 5 is open bus
+            return new BusValue(result, ~0b0010_0000);
+
         }
 
-        return -1;
+        return null;
     }
 
     @Override

@@ -1,6 +1,7 @@
 package input;
 
 import nes.BusDevice;
+import nes.BusValue;
 
 public class ControllerPorts extends BusDevice {
 	//Whether the last write operation was a 1 or 0. If a write from 1 to 0 happens, the controllers need to poll
@@ -29,7 +30,7 @@ public class ControllerPorts extends BusDevice {
 	}
 
 	@Override
-	public int read(int addr) {
+	public BusValue read(int addr) {
 		Controller player = null;
 
 		if(addr == 0x4016) {
@@ -39,8 +40,8 @@ public class ControllerPorts extends BusDevice {
 		}
 
 		if(player == null) {
-			//When no controller is connected, it will always report 0
-			return 0;
+			//When no controller is connected, it will always report 0 (on low 5 bits)
+			return new BusValue(0,0b0001_1111);
 		}
 
 		//When the latch is set the hardware continually updates the shift register, so every read will only ever return
@@ -54,7 +55,7 @@ public class ControllerPorts extends BusDevice {
 
 		//Indicate upper 3 bits are not set (remain open bus)
 		//(Bit 8-15 are used by bus as a bitmask to determine this)
-		return value | (0b0001_1111 << 8);
+		return new BusValue(value,0b0001_1111);
 	}
 
 	@Override
