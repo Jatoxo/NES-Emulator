@@ -399,6 +399,12 @@ public class Jtx6502 implements Tickable {
 				setFlag(N, (i & 0x80) > 0);
 				break;
 			case NOP:
+				// dummy read from effective address? This is kinda just assumptions
+				// but the model is imperfect anyway so at this point I don't really care
+				if(instruction.addressingMode != ADDR_IMM) {
+					read(address);
+				}
+
 				switch(instruction.opcode) {
 					case 0x1C:
 					case 0x3C:
