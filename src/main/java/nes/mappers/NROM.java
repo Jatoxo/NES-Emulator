@@ -69,6 +69,7 @@ public class NROM extends Mapper {
 	public void ppuWrite(int address, int data) {
 		if(!usesChrRam) {
 			System.out.printf("NROM: Write to CHR ROM at %s...\n", Integer.toHexString(address));
+            return;
 		}
 
 		writeBank(chrRom, SIZE_8KiB, 0, address, data);

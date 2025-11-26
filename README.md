@@ -36,7 +36,8 @@ If you truly hate yourself and want to contribute to this spaghetti, feel free t
 
 #### Partial Support (Broken rendering)
 - [ ] AxROM (Battletoads, Solstice, ...)
-
+- [ ] CNROM (Back to the Future, ...)
+- [ ] UxROM (Mega Man, Castelvania, ...)
 - [ ] MMC1 (The Legend of Zelda, Dr. Mario, ...)
 #### Unsupported
 

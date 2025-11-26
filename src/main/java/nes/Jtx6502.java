@@ -168,6 +168,9 @@ public class Jtx6502 implements Tickable {
 				a.set(result);
 
 				break;
+
+
+
 			case AND:
 				i = read(address) & 0xFF;
 				a.set((a.get() & 0xFF) & i);
@@ -191,6 +194,25 @@ public class Jtx6502 implements Tickable {
 				setFlag(Z, (i & 0xFF) == 0);
 				setFlag(N, (i & 0x80) > 0);
 				break;
+
+            case SLO:
+
+                i = read(address);
+
+                //dummy write while we are doing the operation
+                write(address, i);
+
+                i = i << 1;
+                a.set(a.get() | (i & 0xFF));
+
+                write(address, i & 0xFF);
+
+                setFlag(C, i > 0xFF);
+                setFlag(Z, (a.get() & 0xFF) == 0);
+                setFlag(N, (a.get() & 0x80) > 0);
+                break;
+
+
 
 			case BIT: //TODO: For overflow and negative, the read value is used. I.e. overflow = read_value & 0x40. Only the zero flag uses the AND result (confirm??)
 				m = read(address) & 0xFF;
@@ -275,17 +297,35 @@ public class Jtx6502 implements Tickable {
 				setFlag(N, (i & 0x80) > 0);
 				break;
 
-			case DEC:
-				i = read(address);
-				//dummy write while we are doing the operation
-				write(address, i);
+            case DEC:
+                i = read(address);
+                //dummy write while we are doing the operation
+                write(address, i);
 
-				i = (i - 1) & 0xFF;
-				write(address, i);
+                i = (i - 1) & 0xFF;
+                write(address, i);
 
-				setFlag(Z, i == 0);
-				setFlag(N, (i & 0x80) > 0);
-				break;
+                setFlag(Z, i == 0);
+                setFlag(N, (i & 0x80) > 0);
+                break;
+
+            case DCP:
+                i = read(address);
+
+                //dummy write while we are doing the operation
+                write(address, i);
+
+                i = (i - 1) & 0xFF;
+                write(address, i);
+
+                setFlag(C, a.get() >= i);
+
+                i = a.get() - i;
+
+                setFlag(Z, (i & 0xFF) == 0);
+                setFlag(N, (i & 0x80) > 0);
+                break;
+
 			case DEX:
 				i = (x.get() - 1) & 0xFF;
 				x.set(i);
@@ -321,6 +361,28 @@ public class Jtx6502 implements Tickable {
 				setFlag(Z, i == 0);
 				setFlag(N, (i & 0x80) > 0);
 				break;
+
+            case ISC:
+                i = read(address);
+
+                write(address, i); //dummy write while we are doing the operation
+
+                i = (i + 1) & 0xFF;
+                write(address, i & 0xFF);
+
+
+                i = (~i) & 0xFF; //take one's complement
+                result = (a.get() & 0xFF) + i + getFlag(C);
+
+                setFlag(C, (result & 0xFF00) > 0);
+                setFlag(Z, ((result & 0xFF) == 0));
+                setFlag(V, (((a.get()&0xFF)^result)&(i^result)&0x80) > 0);
+                setFlag(N, (result & 0x80) > 0);
+                a.set(result & 0xFF);
+
+                break;
+
+
 			case INX:
 				i = (x.get() + 1) & 0xFF;
 				x.set(i);
@@ -359,12 +421,19 @@ public class Jtx6502 implements Tickable {
 				setFlag(N, (a.get() & 0x80) > 0);
 				break;
 			case LDX:
-
 				i = read(address);
 				x.set(i & 0xFF);
 				setFlag(Z, x.get() == 0);
 				setFlag(N, (x.get() & 0x80) > 0);
 				break;
+            case LAX:
+                i = read(address);
+                x.set(i);
+                a.set(i);
+
+                setFlag(Z, i == 0);
+                setFlag(N, (i & 0x80) > 0);
+                break;
 			case LDY:
 				i = read(address);
 				y.set(i & 0xFF);
@@ -391,6 +460,24 @@ public class Jtx6502 implements Tickable {
 				setFlag(Z, (i & 0xFF) == 0);
 				setFlag(N, (i & 0x80) > 0);
 				break;
+
+            case SRE:
+                i = read(address);
+
+                //dummy write while we are doing the operation
+                write(address, i);
+
+                carry = i & 1;
+                i = i >> 1;
+                a.set(a.get() ^ (i & 0xFF));
+
+                write(address, i & 0xFF);
+
+                setFlag(C, carry > 0);
+                setFlag(Z, (a.get() & 0xFF) == 0);
+                setFlag(N, (a.get() & 0x80) > 0);
+                break;
+
 			case NOP:
 				// dummy read from effective address? This is kinda just assumptions
 				// but the model is imperfect anyway so at this point I don't really care
@@ -449,25 +536,40 @@ public class Jtx6502 implements Tickable {
 				status = i | U;
 				break;
 
-			case ROL:
-				if(instruction.addressingMode == ADDR_IMP || instruction.addressingMode == ADDR_ACCUM) {
-					i = a.get() << 1 | getFlag(C); //Shift bits left filling in carry for bit 0
+            case ROL:
+                if(instruction.addressingMode == ADDR_IMP || instruction.addressingMode == ADDR_ACCUM) {
+                    i = a.get() << 1 | getFlag(C); //Shift bits left filling in carry for bit 0
 
-					a.set(i & 0xFF);
-				} else {
-					i = read(address);
-					//dummy write while we are doing the operation
-					write(address, i);
+                    a.set(i & 0xFF);
+                } else {
+                    i = read(address);
+                    //dummy write while we are doing the operation
+                    write(address, i);
 
-					i = i << 1 | getFlag(C);
+                    i = i << 1 | getFlag(C);
 
-					write(address, i & 0xFF);
-				}
+                    write(address, i & 0xFF);
+                }
 
-				setFlag(C, (i & 0x100) > 0); //Set carry to the shifted off bit
-				setFlag(Z, (i & 0xFF) == 0);
-				setFlag(N, (i & 0x80) > 0);
-				break;
+                setFlag(C, (i & 0x100) > 0); //Set carry to the shifted off bit
+                setFlag(Z, (i & 0xFF) == 0);
+                setFlag(N, (i & 0x80) > 0);
+                break;
+
+            case RLA:
+                i = read(address);
+                //dummy write while we are doing the operation
+                write(address, i);
+
+                i = i << 1 | getFlag(C);
+                a.set(a.get() & (i & 0xFF));
+
+                write(address, i & 0xFF);
+
+                setFlag(C, (i & 0x100) > 0); //Set carry to the shifted off bit
+                setFlag(Z, (a.get() & 0xFF) == 0);
+                setFlag(N, (a.get() & 0x80) > 0);
+                break;
 
 			case ROR: //According to https://web.archive.org/web/20210724074746/http://obelisk.me.uk/6502/reference.html#ROR this sets the Z flag solely based on A but that's dumb so I'm not doing that
 				if(instruction.addressingMode == ADDR_IMP || instruction.addressingMode == ADDR_ACCUM) {
@@ -488,6 +590,29 @@ public class Jtx6502 implements Tickable {
 				setFlag(Z, ((i >> 1) & 0xFF) == 0);
 				setFlag(N, ((i >> 1) & 0x80) > 0);
 				break;
+
+            case RRA:
+                i = read(address);
+
+                //dummy write while we are doing the operation
+                write(address, i);
+
+                carry = i & 1;
+                i = (i >> 1) | (getFlag(C) << 7);
+                setFlag(C, carry > 0);
+
+                write(address, i);
+
+                result = a.get() + i + getFlag(C);
+                setFlag(C, result > 0xFF);
+                setFlag(Z, (result & 0xFF) == 0);
+                setFlag(V, ((~(a.get()^i) & (a.get()^result)) & 0x80) > 0);
+                setFlag(N, (result & 0x80) > 0);
+                a.set(result);
+
+                break;
+
+
 
 			case RTI:
 				//Dummy read while we increment s
@@ -545,6 +670,36 @@ public class Jtx6502 implements Tickable {
 			case STY:
 				write(address, y.get());
 				break;
+            case SAX:
+                write(address, a.get() & x.get());
+                break;
+            case SHA:
+                /*int providedAddr = (address >> 8) & 0xFF;
+                providedAddr -= pageCrossed ? 1 : 0;
+                providedAddr &=  0xFF;
+
+                //i = (address >> 8) & 0xFF;
+                res = ((providedAddr + 1) & 0xFF) & a.get() & x.get();
+
+                if(pageCrossed) {
+                    address &= 0xFF;
+                    address |= res << 8;
+                }
+
+                write(address, res);*/
+
+                int effectiveAddress = address;               // already base + Y
+                int baseHigh = ( (address - y.get()) >> 8 ) & 0xFF;
+                // compute base high from address - Y
+                int effectiveHigh = (effectiveAddress >> 8) & 0xFF;
+
+                boolean pageCrossed = baseHigh != effectiveHigh;
+
+                int highForValue = pageCrossed ? effectiveHigh : baseHigh;
+                int valueToWrite = a.get() & x.get() & ( (highForValue + 1) & 0xFF );
+
+                write(effectiveAddress, valueToWrite);
+                break;
 			case TAX:
 				x.set(a.get());
 				setFlag(Z, x.get() == 0);
@@ -733,23 +888,16 @@ public class Jtx6502 implements Tickable {
 
 	/// Whether the instruction stores shit in memory
 	private boolean isStoreInstruction(int instruction) {
-		switch(instruction) {
-			case ASL:
-			case LSR:
-			case ROL:
-			case ROR:
-			case INC:
-			case DEC:
-			case STA:
-			case STX:
-			case STY:
-				return true;
-			default:
-				return false;
-		}
+        return switch (instruction) {
+            case ASL, LSR, ROL, ROR, INC, DEC, STA, STX, STY, SLO, SRE, RLA, RRA, ISC, DCP, SHA, SHX, SHY, SAX -> true;
+            default -> false;
+        };
 		//ASL, LSR, ROL, ROR, INC, DEC,
+
 		//SLO, SRE, RLA, RRA, ISB, DCP,
-		//STA, STX, STY, SHA, SHX, SHY, SAX
+
+		//STA, STX, STY,
+        //SHA, SHX, SHY, SAX
 
 	}
 
