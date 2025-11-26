@@ -731,20 +731,13 @@ public class Jtx6502 implements Tickable {
 
 			case XXX:
 				break;
+
 			default:
-				System.out.println("BIIIG FUCKY WUCKY!!");
-
-
-
-
-
-
+				System.out.println("Unimplemented Instruction: " + instruction);
 
 
 
 		}
-
-
 	}
 
 	private int getAddress(int addressingMode, int instruction) {
@@ -823,14 +816,6 @@ public class Jtx6502 implements Tickable {
 
 				// The address is in zero page at given location plus X register value
 				i = (x.get() + pointer) & 0xFF;
-
-
-				if(instruction == STA && i == 0x50) {
-					System.out.println("BEEEEEP");
-				}
-				if(instruction == LDA && i == 0x50) {
-					System.out.println("BEEEEEP");
-				}
 
 				i = read(i) | (read((i + 1) & 0xFF) << 8);
 				return i;

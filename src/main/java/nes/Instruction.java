@@ -142,4 +142,25 @@ public class Instruction {
 		return instruction;
 	}
 
+	private String addressingModeString(int mode) {
+		return switch(mode) {
+			case ADDR_IMP -> "ADDR_IMP";
+			case ADDR_ABS -> "ADDR_ABS";
+			case ADDR_ABX -> "ADDR_ABX";
+			case ADDR_ABY -> "ADDR_ABY";
+			case ADDR_IMM -> "ADDR_IMM";
+			case ADDR_IND -> "ADDR_IND";
+			case ADDR_IZX -> "ADDR_IZX";
+			case ADDR_IZY -> "ADDR_IZY";
+			case ADDR_REL -> "ADDR_REL";
+			case ADDR_ZP0 -> "ADDR_ZP0";
+			case ADDR_ZPX -> "ADDR_ZPX";
+			case ADDR_ZPY -> "ADDR_ZPY";
+			default -> "UNKNOWN";
+		};
+	}
+	@Override
+	public String toString() {
+		return mnemonic + " " + addressingModeString(addressingMode) + " | OpCode: " + String.format("0x%02X", opcode) + " Cycles: " + cycles;
+	}
 }

@@ -7,10 +7,10 @@ public class FPSThread extends Thread {
     final LinkedList<Integer> fpsBuffer = new LinkedList<>();
 
     private GUI gui;
-    private int updateIntervalMs;
+    private final int updateIntervalMs;
 
     private long lastUpdated = 0;
-    private Semaphore semaphore = new Semaphore(0);
+    private final Semaphore semaphore = new Semaphore(0);
 
     public FPSThread(GUI gui, int updateIntervalMs) {
         this.gui = gui;
@@ -23,7 +23,6 @@ public class FPSThread extends Thread {
         }
 
         if(System.currentTimeMillis() - lastUpdated > updateIntervalMs) {
-            System.out.println("RELAYSE");
             semaphore.release();
         }
     }
