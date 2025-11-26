@@ -1,7 +1,6 @@
 package gui;
 
 import com.formdev.flatlaf.FlatLightLaf;
-import input.StandardController;
 import nes.Nes;
 import nes.parsing.RomParser;
 import nes.parsing.UnsupportedRomException;
@@ -15,12 +14,18 @@ import java.awt.dnd.*;
 import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
-import java.util.LinkedList;
 import java.util.Objects;
 
 
 
 public class GUI extends JFrame {
+	public final String EMU_NAME = "COCK";
+
+	private final NesPanel nesScreen = new NesPanel();
+	private final FPSThread fpsThread;
+	private long lastFrame = 0;
+
+	private final Nes nes;
 
 
 	public static void main(String[] args) throws IOException, UnsupportedRomException, UnsupportedLookAndFeelException, ClassNotFoundException, InstantiationException, IllegalAccessException {
@@ -34,136 +39,30 @@ public class GUI extends JFrame {
 		gui.nes.start();
 	}
 
-	private final Nes nes;
-
-	private final NesPanel nesScreen = new NesPanel();
-
-	private final String EMU_NAME = "COCK";
 
 
-	private long lastFrame = 0;
-	final LinkedList<Long> fpsBuffer = new LinkedList<>();
+
+
 
 	public GUI() throws IOException, UnsupportedRomException {
 		setTitle(EMU_NAME);
 
-		Thread fpsThread = getFPSThread();
+		fpsThread = new FPSThread(this, 400);
 		fpsThread.start();
-
-
-		Dimension screenSize = new Dimension(256, 240);
-
 
 		getContentPane().add(nesScreen, BorderLayout.CENTER);
 
 		requestFocus();
-		addKeyListener(new KeyAdapter() {
-			@Override
-			public void keyPressed(KeyEvent e) {
-				StandardController controller = (StandardController) nes.controllerPorts.player1;
-				switch(e.getKeyCode()) {
-					case KeyEvent.VK_TAB:
-						nes.limitSpeed = false;
-
-						break;
-					case KeyEvent.VK_W:
-						controller.dpadUp = true;
-						break;
-					case KeyEvent.VK_A:
-						controller.dpadLeft = true;
-						break;
-					case KeyEvent.VK_S:
-						controller.dpadDown = true;
-						break;
-					case KeyEvent.VK_D:
-						controller.dpadRight = true;
-						break;
-					case KeyEvent.VK_SPACE:
-						controller.buttonA = true;
-						break;
-					case KeyEvent.VK_SHIFT:
-						controller.buttonB = true;
-						break;
-					case KeyEvent.VK_MINUS:
-						controller.buttonSelect = true;
-						break;
-					case KeyEvent.VK_ENTER:
-						controller.buttonStart = true;
-						break;
-				}
-			}
-
-			@Override
-			public void keyReleased(KeyEvent e) {
-				StandardController controller = (StandardController) nes.controllerPorts.player1;
-				switch(e.getKeyCode()) {
-					case KeyEvent.VK_TAB:
-						nes.limitSpeed = true;
-						break;
-					case KeyEvent.VK_W:
-						controller.dpadUp = false;
-						break;
-					case KeyEvent.VK_A:
-						controller.dpadLeft = false;
-						break;
-					case KeyEvent.VK_S:
-						controller.dpadDown = false;
-						break;
-					case KeyEvent.VK_D:
-						controller.dpadRight = false;
-						break;
-					case KeyEvent.VK_SPACE:
-						controller.buttonA = false;
-						break;
-					case KeyEvent.VK_SHIFT:
-						controller.buttonB = false;
-						break;
-					case KeyEvent.VK_MINUS:
-						controller.buttonSelect = false;
-						break;
-					case KeyEvent.VK_ENTER:
-						controller.buttonStart = false;
-						break;
-				}
-			}
-		});
-
 
 		setupMenus();
 		setupFrame();
 
-
 		this.nes = new Nes(this);
+
+		addKeyListener(new PhysicalInput(nes));
 	}
 
 
-	private Thread getFPSThread() {
-		JFrame f = this;
-
-		//Thread for measuring FPS
-		return new Thread(() -> {
-			while(true) {
-				long cumulativeFPS = 0;
-				int size;
-
-				synchronized(fpsBuffer) {
-					size = fpsBuffer.size();
-					for(long fps : fpsBuffer) {
-						cumulativeFPS += fps;
-					}
-					fpsBuffer.clear();
-				}
-
-				int val = Math.round(cumulativeFPS / (float) size);
-				f.setTitle(EMU_NAME + " - FPS: "+ val);
-				try {
-					Thread.sleep(500);
-				} catch(InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
 
 	private void setupMenus() {
 		JMenuBar menuBar = new JMenuBar();
@@ -271,11 +170,8 @@ public class GUI extends JFrame {
 		elapsed = Math.round(elapsed / 1000000.0);
 
 		if(elapsed != 0) {
-			long fps = Math.round(1000.0 / elapsed);
-
-			synchronized(fpsBuffer) {
-				fpsBuffer.add(fps);
-			}
+			int fps = (int) Math.round(1000.0 / elapsed);
+			fpsThread.addFPSValue(fps);
 		}
 
 		lastFrame = System.nanoTime();
