@@ -16,7 +16,7 @@ public class PPUBus {
 		addr &= 0x3FFF; //PPU Bus has 13 address lanes
 
 		if(addr >= vram.getAddrStart() && addr <= vram.getAddrEnd()) {
-			if(vram.isEnabled(addr)) {
+			if(cart.isCIRAMEnabled(addr)) {
 				vram.ppuWrite(addr, data);
 				return;
 			}
@@ -33,7 +33,7 @@ public class PPUBus {
 		addr &= 0x3FFF; //PPU Bus has 13 address lanes
 
 		if(addr >= vram.getAddrStart() && addr <= vram.getAddrEnd()) {
-			if(vram.isEnabled(addr)) {
+			if(cart.isCIRAMEnabled(addr)) {
 				return vram.ppuRead(addr) & 0xFF;
 			}
 		}
