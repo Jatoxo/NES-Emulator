@@ -30,7 +30,7 @@ public class PPU extends BusDevice implements Tickable {
 	byte[] outputBuffer = new byte[SCREEN_WIDTH * SCREEN_HEIGHT * 3];
 
 
-	Palette palette;
+	public Palette palette;
 
 	long totalCycles = 0;
 
@@ -43,7 +43,7 @@ public class PPU extends BusDevice implements Tickable {
 
 	private Cartridge cartridge;
 	private final PPUBus ppuBus;
-	private byte[] palleteRam;
+	private final byte[] palleteRam;
 	private final byte[] OAM;
 	private final byte[] secondaryOAM;
 
@@ -482,7 +482,7 @@ public class PPU extends BusDevice implements Tickable {
 	}
 
 	//Get the 8-Byte
-	byte[] getPatternEntry(int halfSelect, int index, int bitPlaneSelect) {
+	public byte[] getPatternEntry(int halfSelect, int index, int bitPlaneSelect) {
 		//DCBA98 76543210 //PPU addresses within the pattern tables can be decoded as follows:
 		//---------------
 		//0HRRRR CCCCPTTT
@@ -903,14 +903,7 @@ public class PPU extends BusDevice implements Tickable {
 
 		//Palette RAM does not use the bus
 		if(addr >= PALLETE_RAM_INDEX_START) {
-			//Mask out 5 bits for mirroring
-			addr &= 0x1F;
-
-			if((addr & 0x3) == 0) {
-				addr &= 0xF;
-			}
-			//Todo: Upper two bits should be open bus
-			return palleteRam[addr] & 0b0011_1111;
+			return Byte.toUnsignedInt(paletteRead(addr));
 		}
 
 		return ppuBus.read(addr) & 0xFF;
@@ -1131,6 +1124,18 @@ public class PPU extends BusDevice implements Tickable {
 
 	}
 
+	public byte paletteRead(int address) {
+		//Mask out 5 bits for mirroring
+		address &= 0x1F;
+
+		//When two last bits are 0, disable bit A4 (To force Background Palette) since these are mirrors of those locations
+		if((address & 0x3) == 0) {
+			address &= 0xF;
+		}
+
+		//Todo: Upper two bits should be open bus
+		return (byte) (palleteRam[address] & 0b0011_1111);
+	}
 
 	// NES PPU clock in Hz
 	private static final double PPU_CLOCK_HZ = 5_369_318.0;

@@ -25,6 +25,8 @@ public class GUI extends JFrame {
 	private final FPSThread fpsThread;
 	private long lastFrame = 0;
 
+	private PatternViewWindow patternViewWindow;
+
 	private final Nes nes;
 
 
@@ -54,11 +56,13 @@ public class GUI extends JFrame {
 
 		requestFocus();
 
+
 		setupMenus();
 		setupFrame();
 
 		this.nes = new Nes(this);
 
+		patternViewWindow = new PatternViewWindow(nes);
 		addKeyListener(new PhysicalInput(nes));
 	}
 
@@ -67,31 +71,47 @@ public class GUI extends JFrame {
 	private void setupMenus() {
 		JMenuBar menuBar = new JMenuBar();
 
+		// ------------- FILE MENU -------------------
 		JMenu fileMenu = new JMenu("File");
 		JMenuItem openRomItem = new JMenuItem("Load ROM");
 		fileMenu.add(openRomItem);
 		JMenuItem exitRom = new JMenuItem("Exit ROM");
 		fileMenu.add(exitRom);
+		// --------------------------------------------
 
-		menuBar.add(fileMenu);
 
+		// ------------- EMULATION MENU ---------------
 		JMenu emuMenu = new JMenu("Emulation");
 		JMenuItem resetOption = new JMenuItem("Reset");
-		emuMenu.add(resetOption);
 		JMenuItem pauseItem = new JMenuItem("Pause");
-		emuMenu.add(pauseItem);
 		JMenuItem speedItem = new JMenuItem("Set maximum speed...");
+
+		emuMenu.add(pauseItem);
 		emuMenu.add(speedItem);
+		emuMenu.add(resetOption);
 
 		resetOption.addActionListener(e -> nes.reset());
+		// --------------------------------------------
 
-		emuMenu.add(pauseItem);
+		// --------------- TOOLS MENU -----------------
+		JMenu toolsMenu = new JMenu("Tools");
+		JMenuItem patternViewer = new JMenuItem("View Pattern Tables..");
+		toolsMenu.add(patternViewer);
+
+		patternViewer.addActionListener((e) -> viewPatternTablesClicked());
+		// --------------------------------------------
 
 
+		menuBar.add(fileMenu);
 		menuBar.add(emuMenu);
+		menuBar.add(toolsMenu);
+
 
 		setJMenuBar(menuBar);
+	}
 
+	private void viewPatternTablesClicked() {
+		patternViewWindow.setVisible(true);
 	}
 
 	private void setupFrame() {
@@ -165,6 +185,11 @@ public class GUI extends JFrame {
 
 	public void renderScreen(byte[] screen) {
 		nesScreen.updateScreen(screen);
+		if(patternViewWindow.isVisible()) {
+			patternViewWindow.update();
+		}
+
+
 
 		long elapsed = System.nanoTime() - lastFrame;
 		elapsed = Math.round(elapsed / 1000000.0);
