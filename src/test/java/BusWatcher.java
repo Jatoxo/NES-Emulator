@@ -1,11 +1,12 @@
-import nes.BusValue;
+import emu.nes.BusDevice;
+import emu.nes.BusValue;
 
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class BusWatcher extends nes.BusDevice {
+public class BusWatcher extends BusDevice {
     private final Map<Integer, Byte> ram = new HashMap<>();
 
     public BusWatcher() {

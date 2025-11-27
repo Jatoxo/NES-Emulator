@@ -1,9 +1,7 @@
-import gui.GUI;
-import nes.Clock;
-import nes.Instruction;
-import nes.Jtx6502;
-import nes.Nes;
-import nes.parsing.UnsupportedRomException;
+import emu.gui.GUI;
+import emu.nes.Instruction;
+import emu.nes.Jtx6502;
+import emu.nes.Nes;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;

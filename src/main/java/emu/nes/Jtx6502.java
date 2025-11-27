@@ -1,0 +1,1059 @@
+package emu.nes;
+
+
+import emu.nes.ppu.PPU;
+
+import static emu.nes.Instruction.*;
+
+//Todo: Add convenience functions for stack operations
+public class Jtx6502 {
+	public static final int ADDR_ACCUM = 1;
+	public static final int ADDR_IMM = 2;
+	public static final int ADDR_IMP = 3;
+	public static final int ADDR_ABS = 4;
+	public static final int ADDR_ZP0 =  5;
+	public static final int ADDR_ZPX = 6;
+	public static final int ADDR_ZPY = 7;
+	public static final int ADDR_ABX = 8;
+	public static final int ADDR_ABY = 9;
+	public static final int ADDR_REL = 10;
+	public static final int ADDR_IZX = 11;
+	public static final int ADDR_IZY = 12;
+	public static final int ADDR_IND = 13;
+
+
+
+	public Bus bus;
+
+	//Status register mask bits
+	final static int C = (1 << 0); //CARRY
+	final static int Z = (1 << 1); //ZERO
+	final static int I = (1 << 2); //IRQ DISABLE
+	final static int D = (1 << 3); //DECIMAL MODE (Unused on the NES)
+	final static int B = (1 << 4); //BRK COMMAND
+	final static int U = (1 << 5); //Unused (B Flag)
+	final static int V = (1 << 6); //OVERFLOW
+	final static int N = (1 << 7); //NEGATIVE
+
+
+	//Registers (8-Bit, pc is 16 bit)
+	public Register a = new Register(0x00, Register.BitSize.BITS_8); //Accumulator Register
+	public Register x = new Register(0x00, Register.BitSize.BITS_8); //X (Index Register)
+	public Register y = new Register(0x00, Register.BitSize.BITS_8); //Y (Index Register)
+	public Register s = new Register(0x00, Register.BitSize.BITS_8); //Stack Pointer (Points to location on bus)
+	public Register pc = new Register(0x00, Register.BitSize.BITS_16); //Program counter
+
+	public int status = 0x00; //Status register
+	//public FlagRegister statusF = new FlagRegister(0x00, Register.BitSize.BITS_8, "Status", "P");
+
+
+
+	int opcode = 0x00;
+	public int cycles = 0;
+
+	long totalCycles = 0;
+
+	private boolean pageCrossed = false;
+
+
+	Instruction currentInstruction;
+
+	private boolean raiseNMI = false;
+	private boolean raiseIRQ = false;
+
+	private Nes nes;
+
+	public Jtx6502(Nes nes) {
+		this.bus = new Bus();
+		this.nes = nes;
+		/*
+		statusF.addFlag("Carry", "C", C);
+		statusF.addFlag("Zero", "Z", Z);
+		statusF.addFlag("IRQ Disable", "I", I);
+		statusF.addFlag("Decimal Mode", "D", D);
+		statusF.addFlag("B-Flag", "B", B);
+		statusF.addFlag("Overflow", "V", V);
+		statusF.addFlag("Negative", "N", N);
+		*/
+
+	}
+
+	public void raiseNMI() {
+		raiseNMI = true;
+	}
+
+	public void raiseIRQ() {
+		//System.out.println("IRQ raised");
+		//TODO: This needs work. Interrupt is level sensitive, so someone might call this function but only afterwards
+		// the inhibit flag gets cleared. In that case an interrupt still needs to be triggered.
+		raiseIRQ = true;
+	}
+
+	public void releaseIRQ() {
+		raiseIRQ = false;
+	}
+
+	public void logCpuState() {
+		System.out.print(String.format("%x", currentInstruction.address).toUpperCase());
+		System.out.print(String.format(" %x", currentInstruction.opcode).toUpperCase()); //First instruction byte (opcode)
+		System.out.print("  ");
+		System.out.print(currentInstruction.mnemonic); //Mnemonic
+		System.out.print("                      ");
+
+		System.out.print(String.format("A:%02x ", a.get()).toUpperCase());
+		System.out.print(String.format("X:%02x ", x.get()).toUpperCase());
+		System.out.print(String.format("Y:%02x ", y.get()).toUpperCase());
+		System.out.print(String.format("P:%02x ", status).toUpperCase());
+		System.out.print(String.format("SP:%02x ", s.get()).toUpperCase());
+
+
+		System.out.println(" CYC: " + totalCycles);
+	}
+
+	public void clockCycle() {
+		if(cycles == 0 && raiseNMI) {
+			raiseNMI = false;
+			nmi();
+		} else if(raiseIRQ && cycles == 0 && getFlag(I) == 0) {
+			raiseIRQ = false;
+			irq();
+		} else if(cycles == 0) {
+
+
+			opcode = read(pc.get());
+
+			currentInstruction = fromOpCode((byte) opcode);
+			currentInstruction.address = pc.get();
+
+			pc.increment();
+
+			//logCpuState();
+
+			cycles = currentInstruction.cycles;
+
+			executeInstruction(currentInstruction);
+			//index++;
+
+		}
+
+		cycles--;
+		totalCycles++;
+	}
+
+	private void executeInstruction(Instruction instruction) {
+		int address = getAddress(instruction.addressingMode, instruction.operation);
+		int i = 0;
+
+		switch(instruction.operation) {
+			case ADC:
+			case AND:
+			case CMP:
+			case EOR:
+			case LDA:
+			case LDY:
+			case LDX:
+			case ORA:
+			case SBC:
+				if(pageCrossed) {
+					cycles++;
+				}
+
+
+		}
+		int m;
+		switch(instruction.operation) {
+
+			case ADC:
+				i = read(address) & 0xFF;
+
+				int result = (a.get() & 0xFF) + i + getFlag(C);
+
+				setFlag(C, result > 0xFF);
+				setFlag(Z, (result & 0xFF) == 0);
+				setFlag(V, ((~(a.get()^i) & (a.get()^result)) & 0x80) > 0);
+				setFlag(N, (result & 0x80) > 0);
+				a.set(result);
+
+				break;
+
+
+
+			case AND:
+				i = read(address) & 0xFF;
+				a.set((a.get() & 0xFF) & i);
+
+				setFlag(Z, a.get() == 0);
+				setFlag(N, (a.get() & 0x80) > 0);
+				break;
+
+			case ASL:
+				if(instruction.addressingMode == ADDR_IMP || instruction.addressingMode == ADDR_ACCUM) {
+					i = a.get() << 1;
+					a.set(i & 0xFF);
+				} else {
+					i = read(address);
+					//dummy write while we are doing the operation
+					write(address, i);
+					i = i << 1;
+					write(address, i & 0xFF);
+				}
+				setFlag(C, i > 0xFF);
+				setFlag(Z, (i & 0xFF) == 0);
+				setFlag(N, (i & 0x80) > 0);
+				break;
+
+            case SLO:
+
+                i = read(address);
+
+                //dummy write while we are doing the operation
+                write(address, i);
+
+                i = i << 1;
+                a.set(a.get() | (i & 0xFF));
+
+                write(address, i & 0xFF);
+
+                setFlag(C, i > 0xFF);
+                setFlag(Z, (a.get() & 0xFF) == 0);
+                setFlag(N, (a.get() & 0x80) > 0);
+                break;
+
+
+
+			case BIT: //TODO: For overflow and negative, the read value is used. I.e. overflow = read_value & 0x40. Only the zero flag uses the AND result (confirm??)
+				m = read(address) & 0xFF;
+				i = (a.get() & 0xFF) & m;
+				setFlag(Z, i == 0);
+
+				setFlag(V, (m & 0x40) > 0);
+				setFlag(N, (m & 0x80) > 0);
+				break;
+
+			case BCC:
+				handleBranch(getFlag(C) == 0, pageCrossed, address);
+				break;
+			case BCS:
+				handleBranch(getFlag(C) > 0 , pageCrossed, address);
+				break;
+			case BEQ:
+				handleBranch(getFlag(Z) > 0 , pageCrossed, address);
+				break;
+			case BMI:
+				handleBranch(getFlag(N) > 0 , pageCrossed, address);
+				break;
+			case BNE:
+				handleBranch(getFlag(Z) == 0, pageCrossed, address);
+				break;
+			case BPL:
+				handleBranch(getFlag(N) == 0, pageCrossed, address);
+				break;
+			case BVC:
+				handleBranch(getFlag(V) == 0, pageCrossed, address);
+				break;
+			case BVS:
+				handleBranch(getFlag(V) > 0 , pageCrossed, address);
+				break;
+
+			case BRK:
+				pc.increment();
+
+				pushWord(pc.get()); //Push pc to stack
+				pushByte(status | B | U); //Push status to stack with B Flag set
+
+				setFlag(I, true); //Set I flag (After pushing status?)
+				pc.set( (read(0xFFFE)) | (read(0xFFFF) << 8));
+				break;
+
+
+			case CLC:
+				setFlag(C, false);
+				break;
+			case CLD:
+				setFlag(D, false);
+				break;
+			case CLI:
+				setFlag(I, false);
+				break;
+			case CLV:
+				setFlag(V, false);
+				break;
+
+			case CMP:
+				m = read(address) & 0xFF;
+				i = a.get() - m;
+
+				setFlag(C, a.get() >= m);
+				setFlag(Z, (i & 0xFF) == 0);
+				setFlag(N, (i & 0x80) > 0);
+				break;
+			case CPX:
+				m = read(address) & 0xFF;
+				i = x.get() - m;
+
+				setFlag(C, x.get() >= m);
+				setFlag(Z, (i & 0xFF) == 0);
+				setFlag(N, (i & 0x80) > 0);
+				break;
+			case CPY:
+				m = read(address) & 0xFF;
+				i = y.get() - m;
+
+				setFlag(C, y.get() >= m);
+				setFlag(Z, (i & 0xFF) == 0);
+				setFlag(N, (i & 0x80) > 0);
+				break;
+
+            case DEC:
+                i = read(address);
+                //dummy write while we are doing the operation
+                write(address, i);
+
+                i = (i - 1) & 0xFF;
+                write(address, i);
+
+                setFlag(Z, i == 0);
+                setFlag(N, (i & 0x80) > 0);
+                break;
+
+            case DCP:
+                i = read(address);
+
+                //dummy write while we are doing the operation
+                write(address, i);
+
+                i = (i - 1) & 0xFF;
+                write(address, i);
+
+                setFlag(C, a.get() >= i);
+
+                i = a.get() - i;
+
+                setFlag(Z, (i & 0xFF) == 0);
+                setFlag(N, (i & 0x80) > 0);
+                break;
+
+			case DEX:
+				i = (x.get() - 1) & 0xFF;
+				x.set(i);
+
+				setFlag(Z, (i & 0xFF) == 0);
+				setFlag(N, (i & 0x80) > 0);
+				break;
+			case DEY:
+				i = (y.get() - 1) & 0xFF;
+				y.set(i);
+
+				setFlag(Z, (i & 0xFF) == 0);
+				setFlag(N, (i & 0x80) > 0);
+				break;
+
+			case EOR:
+				i = read(address) & 0xFF;
+
+				a.set(a.get() ^ i);
+
+				setFlag(Z, a.get() == 0);
+				setFlag(N, (a.get() & 0x80) > 0);
+				break;
+
+			case INC:
+				i = read(address);
+				//dummy write while we are doing the operation
+				write(address, i);
+
+				i = (i + 1) & 0xFF;
+				write(address, i & 0xFF);
+
+				setFlag(Z, i == 0);
+				setFlag(N, (i & 0x80) > 0);
+				break;
+
+            case ISC:
+                i = read(address);
+
+                write(address, i); //dummy write while we are doing the operation
+
+                i = (i + 1) & 0xFF;
+                write(address, i & 0xFF);
+
+
+                i = (~i) & 0xFF; //take one's complement
+                result = (a.get() & 0xFF) + i + getFlag(C);
+
+                setFlag(C, (result & 0xFF00) > 0);
+                setFlag(Z, ((result & 0xFF) == 0));
+                setFlag(V, (((a.get()&0xFF)^result)&(i^result)&0x80) > 0);
+                setFlag(N, (result & 0x80) > 0);
+                a.set(result & 0xFF);
+
+                break;
+
+
+			case INX:
+				i = (x.get() + 1) & 0xFF;
+				x.set(i);
+
+				setFlag(Z, (i & 0xFF) == 0);
+				setFlag(N, (i & 0x80) > 0);
+				break;
+			case INY:
+				i = (y.get() + 1) & 0xFF;
+				y.set(i);
+
+				setFlag(Z, (i & 0xFF) == 0);
+				setFlag(N, (i & 0x80) > 0);
+				break;
+			case JMP:
+				pc.set(address);
+				break;
+			case JSR:
+				//we dummy read here idk why but it happens
+				read(0x100 + s.get());
+
+				//Push pc onto stack
+				pushWord(pc.get());
+
+				//Finally read second operand (high of address)
+				i = read(pc.get());
+
+				//Use low address fetched earlier (how does the cpu know??)
+				pc.set((i << 8) | address);
+				break;
+
+			case LDA:
+				i = read(address);
+				a.set(i & 0xFF);
+				setFlag(Z, a.get() == 0);
+				setFlag(N, (a.get() & 0x80) > 0);
+				break;
+			case LDX:
+				i = read(address);
+				x.set(i & 0xFF);
+				setFlag(Z, x.get() == 0);
+				setFlag(N, (x.get() & 0x80) > 0);
+				break;
+            case LAX:
+                i = read(address);
+                x.set(i);
+                a.set(i);
+
+                setFlag(Z, i == 0);
+                setFlag(N, (i & 0x80) > 0);
+                break;
+			case LDY:
+				i = read(address);
+				y.set(i & 0xFF);
+				setFlag(Z, y.get() == 0);
+				setFlag(N, (y.get() & 0x80) > 0);
+				break;
+
+			case LSR:
+				int carry;
+				if(instruction.addressingMode == ADDR_IMP || instruction.addressingMode == ADDR_ACCUM) {
+					carry = a.get() & 1;
+					i = a.get() >> 1;
+					a.set(i & 0xFF);
+				} else {
+					i = read(address);
+					//dummy write while we are doing the operation
+					write(address, i);
+					carry = i & 1;
+					i = i >> 1;
+					write(address, i & 0xFF);
+				}
+
+				setFlag(C, carry > 0);
+				setFlag(Z, (i & 0xFF) == 0);
+				setFlag(N, (i & 0x80) > 0);
+				break;
+
+            case SRE:
+                i = read(address);
+
+                //dummy write while we are doing the operation
+                write(address, i);
+
+                carry = i & 1;
+                i = i >> 1;
+                a.set(a.get() ^ (i & 0xFF));
+
+                write(address, i & 0xFF);
+
+                setFlag(C, carry > 0);
+                setFlag(Z, (a.get() & 0xFF) == 0);
+                setFlag(N, (a.get() & 0x80) > 0);
+                break;
+
+			case NOP:
+				// dummy read from effective address? This is kinda just assumptions
+				// but the model is imperfect anyway so at this point I don't really care
+				if(instruction.addressingMode != ADDR_IMM) {
+					read(address);
+				}
+
+				switch(instruction.opcode) {
+					case 0x1C:
+					case 0x3C:
+					case 0x5C:
+					case 0x7C:
+					case 0xDC:
+					case 0xFC:
+						if(pageCrossed) {
+							cycles++;
+						}
+					break;
+				}
+				break;
+
+			case ORA:
+				i = read(address);
+
+				a.set(a.get() | (i & 0xFF));
+
+				setFlag(Z, a.get() == 0);
+				setFlag(N, (a.get() & 0x80) > 0);
+				break;
+
+			case PHA:
+				pushByte(a.get());
+				break;
+
+			case PHP:
+				pushByte(status | B | U);
+				break;
+
+			case PLA:
+				//Dummy read while we increment s
+				read(0x100 + s.get());
+				i = popByte();
+				a.set(i);
+
+				setFlag(Z, a.get() == 0);
+				setFlag(N, (a.get() & 0x80) > 0);
+
+				break;
+
+			case PLP:
+				//Dummy read at wrong stack address
+				read(0x100 + s.get());
+
+				i = popByte();
+				i &= 0xEF; //Mask out B Flag
+				status = i | U;
+				break;
+
+            case ROL:
+                if(instruction.addressingMode == ADDR_IMP || instruction.addressingMode == ADDR_ACCUM) {
+                    i = a.get() << 1 | getFlag(C); //Shift bits left filling in carry for bit 0
+
+                    a.set(i & 0xFF);
+                } else {
+                    i = read(address);
+                    //dummy write while we are doing the operation
+                    write(address, i);
+
+                    i = i << 1 | getFlag(C);
+
+                    write(address, i & 0xFF);
+                }
+
+                setFlag(C, (i & 0x100) > 0); //Set carry to the shifted off bit
+                setFlag(Z, (i & 0xFF) == 0);
+                setFlag(N, (i & 0x80) > 0);
+                break;
+
+            case RLA:
+                i = read(address);
+                //dummy write while we are doing the operation
+                write(address, i);
+
+                i = i << 1 | getFlag(C);
+                a.set(a.get() & (i & 0xFF));
+
+                write(address, i & 0xFF);
+
+                setFlag(C, (i & 0x100) > 0); //Set carry to the shifted off bit
+                setFlag(Z, (a.get() & 0xFF) == 0);
+                setFlag(N, (a.get() & 0x80) > 0);
+                break;
+
+			case ROR: //According to https://web.archive.org/web/20210724074746/http://obelisk.me.uk/6502/reference.html#ROR this sets the Z flag solely based on A but that's dumb so I'm not doing that
+				if(instruction.addressingMode == ADDR_IMP || instruction.addressingMode == ADDR_ACCUM) {
+					i = a.get() | (getFlag(C) << 8);
+
+					a.set((i >> 1) & 0xFF);
+				} else {
+					i = read(address);
+					//dummy write while we are doing the operation
+					write(address, i);
+
+					i = i | (getFlag(C) << 8);
+
+					write(address, (i >> 1) & 0xFF);
+				}
+
+				setFlag(C, (i & 1) > 0);
+				setFlag(Z, ((i >> 1) & 0xFF) == 0);
+				setFlag(N, ((i >> 1) & 0x80) > 0);
+				break;
+
+            case RRA:
+                i = read(address);
+
+                //dummy write while we are doing the operation
+                write(address, i);
+
+                carry = i & 1;
+                i = (i >> 1) | (getFlag(C) << 7);
+                setFlag(C, carry > 0);
+
+                write(address, i);
+
+                result = a.get() + i + getFlag(C);
+                setFlag(C, result > 0xFF);
+                setFlag(Z, (result & 0xFF) == 0);
+                setFlag(V, ((~(a.get()^i) & (a.get()^result)) & 0x80) > 0);
+                setFlag(N, (result & 0x80) > 0);
+                a.set(result);
+
+                break;
+
+
+
+			case RTI:
+				//Dummy read while we increment s
+				read(0x100 + s.get());
+				//Restore status register
+				status = popByte();
+				status &= 0xEF; //Mask out B Flag
+				status |= U;    //Set U Flag
+
+				//Restore program counter
+				pc.set(popWord());
+				break;
+
+			case RTS:
+				//Dummy read while we increment s
+				read(0x100 + s.get());
+
+				//Fetch PC Value from stack
+				pc.set(popWord());
+
+				//Dummy read while we increment pc
+				read(pc.increment());
+				break;
+
+			case SBC:
+				int n = read(address) & 0xFF;
+
+				n = (~n) & 0xFF; //take one's complement
+
+				int res = (a.get() & 0xFF) + n + getFlag(C);
+
+				setFlag(C, (res & 0xFF00) > 0);
+				setFlag(Z, ((res & 0x00FF) == 0));
+				setFlag(V, (((a.get()&0xFF)^res)&(n^res)&0x80) > 0);
+				setFlag(N, (res & 0x0080) > 0);
+				a.set(res & 0x00FF);
+
+				break;
+
+			case SEC:
+				setFlag(C, true);
+				break;
+			case SED:
+				setFlag(D, true);
+				break;
+			case SEI:
+				setFlag(I, true);
+				break;
+			case STA:
+				write(address, a.get());
+				break;
+			case STX:
+				write(address, x.get());
+				break;
+			case STY:
+				write(address, y.get());
+				break;
+            case SAX:
+                write(address, a.get() & x.get());
+                break;
+            case SHA:
+                /*int providedAddr = (address >> 8) & 0xFF;
+                providedAddr -= pageCrossed ? 1 : 0;
+                providedAddr &=  0xFF;
+
+                //i = (address >> 8) & 0xFF;
+                res = ((providedAddr + 1) & 0xFF) & a.get() & x.get();
+
+                if(pageCrossed) {
+                    address &= 0xFF;
+                    address |= res << 8;
+                }
+
+                write(address, res);*/
+
+                int effectiveAddress = address;               // already base + Y
+                int baseHigh = ( (address - y.get()) >> 8 ) & 0xFF;
+                // compute base high from address - Y
+                int effectiveHigh = (effectiveAddress >> 8) & 0xFF;
+
+                boolean pageCrossed = baseHigh != effectiveHigh;
+
+                int highForValue = pageCrossed ? effectiveHigh : baseHigh;
+                int valueToWrite = a.get() & x.get() & ( (highForValue + 1) & 0xFF );
+
+                write(effectiveAddress, valueToWrite);
+                break;
+			case TAX:
+				x.set(a.get());
+				setFlag(Z, x.get() == 0);
+				setFlag(N, (x.get() & 0x80) > 0);
+				break;
+			case TAY:
+				y.set(a.get());
+				setFlag(Z, y.get() == 0);
+				setFlag(N, (y.get() & 0x80) > 0);
+				break;
+			case TSX:
+				x.set(s.get());
+				setFlag(Z, x.get() == 0);
+				setFlag(N, (x.get() & 0x80) > 0);
+				break;
+			case TXA:
+				a.set(x.get());
+				setFlag(Z, a.get() == 0);
+				setFlag(N, (a.get() & 0x80) > 0);
+				break;
+			case TXS:
+				s.set(x.get());
+				break;
+			case TYA:
+				a.set(y.get());
+				setFlag(Z, a.get() == 0);
+				setFlag(N, (a.get() & 0x80) > 0);
+				break;
+
+			case XXX:
+				break;
+
+			default:
+				System.out.println("Unimplemented Instruction: " + instruction);
+
+
+
+		}
+	}
+
+	private int getAddress(int addressingMode, int instruction) {
+		pageCrossed = false;
+
+		int i = 0;
+		switch(addressingMode) {
+			case ADDR_ACCUM:
+			case ADDR_IMP:
+				//Read value and discard it
+				read(pc.get());
+				return 0;
+			case ADDR_IMM:
+				return pc.increment();
+			case ADDR_ABS:
+				int low = read(pc.increment()) & 0xFF;
+				if(instruction == JSR) {
+					return low;
+				}
+				int hi = (read(pc.increment()) & 0xFF) << 8;
+                return low | hi;
+
+			case ADDR_ZP0:
+                return read(pc.increment()) & 0xFF;
+			case ADDR_ZPX:
+				i = read(pc.increment());
+				//dummy read while adding
+				read(i);
+				return (x.get() + i) & 0xFF; //I don't know if excluding the higher bits is necessary, but I'll do it anyway
+			case ADDR_ZPY:
+				i = read(pc.increment());
+				//dummy read while adding
+				read(i);
+				return (y.get() + i) & 0xFF;
+			case ADDR_ABX:
+				i = read(pc.increment()) | (read(pc.increment()) << 8);
+
+				int addr = i + x.get();
+
+
+				//Every instruction always read at the wrong address first.
+				//On read instructions, if there was no overflow then the read value
+				//can be used
+				//On instruction that write, an extra cycle is always needed
+				//This is modeled here as write instructions doing an extra read,
+				//whereas read instructions just do their one read later in executeInstruction
+				if((i & 0xFF00) != (addr & 0xFF00) || isStoreInstruction(instruction)) {
+					//Do a dummy read at the wrong address
+					//High byte same as the one read
+					read((i & (0xFF << 8)) | (addr & 0xFF));
+					pageCrossed = true;
+				}
+
+				return addr;
+			case ADDR_ABY:
+				i = read(pc.increment()) | (read(pc.increment()) << 8);
+				addr = i + y.get();
+
+				if((i & 0xFF00) != (addr & 0xFF00) || isStoreInstruction(instruction)) {
+					//Do a dummy read at the wrong address
+					//High byte same as the one read
+					read((i & (0xFF << 8)) | (addr & 0xFF));
+					pageCrossed = true;
+				}
+				return addr & 0xFFFF;
+
+			case ADDR_REL:
+				int offset = read(pc.increment());
+				return offset;
+
+			case ADDR_IZX:
+				int pointer = read(pc.increment());
+
+				//dummy read while adding x
+				read(pointer & 0xFF);
+
+				// The address is in zero page at given location plus X register value
+				i = (x.get() + pointer) & 0xFF;
+
+				i = read(i) | (read((i + 1) & 0xFF) << 8);
+				return i;
+			case ADDR_IZY:
+				// There is an address in zero page at given location, read address and add Y to it for
+				// effective address
+				i = read(pc.increment()); //Get an address to the first byte of address in Zero Page
+				i = read(i) | (read((i + 1) & 0xFF) << 8); //read the full address in zero page
+
+				int addre = (i + y.get()) & 0xFFFF; //Add y to the address
+
+				if((i & 0xFF00) != (addre & 0xFF00) || isStoreInstruction(instruction)) { //If a page cross occurred an additional clock cycle will happen
+					//Do a dummy read at the wrong address
+					//High byte same as the one read
+					read((i & (0xFF << 8)) | (addre & 0xFF));
+					pageCrossed = true;
+				}
+
+				return addre;
+
+			case ADDR_IND:
+				i = read(pc.increment()) | (read(pc.increment()) << 8); //Address (pointer) to another address
+				i = read(i) | (read((i & 0xFF00) | ((i + 1) & 0xFF)) << 8); //The full address (The second byte of which can only come from the same page)
+				return i;
+
+		}
+
+		return 0;//no
+	}
+
+	private void handleBranch(boolean branchTaken, boolean pageCrossed, int offset) {
+
+		if(branchTaken) {
+			cycles++;
+
+			int address = pc.get() + (byte) offset;
+
+			// While we're adding the offset to PC, we do a dummy read
+			read(pc.get());
+
+			// If we cross a page, we need another cycle to correct the address
+			if((pc.get() & 0xFF00) != (address & 0xFF00)) {
+				//Do a dummy read at the wrong address
+				//High byte still unchanged
+				read((pc.get() & (0xFF << 8)) | (address & 0xFF));
+
+				pageCrossed = true;
+				cycles++;
+			}
+
+
+			pc.set(address);
+		}
+	}
+
+	/// Whether the instruction stores shit in memory
+	private boolean isStoreInstruction(int instruction) {
+        return switch (instruction) {
+            case ASL, LSR, ROL, ROR, INC, DEC, STA, STX, STY, SLO, SRE, RLA, RRA, ISC, DCP, SHA, SHX, SHY, SAX -> true;
+            default -> false;
+        };
+		//ASL, LSR, ROL, ROR, INC, DEC,
+
+		//SLO, SRE, RLA, RRA, ISB, DCP,
+
+		//STA, STX, STY,
+        //SHA, SHX, SHY, SAX
+
+	}
+
+
+	public void reset() {
+		//Set Program counter to FFFC-FFFD
+
+		pc.set(read(0XFFFC) | (read(0xFFFC + 1) << 8));
+		//pc.set(0x0C000); //To get nestest to work without ppu
+
+		// Reset internal registers
+		a.set(0);
+		x.set(0);
+		y.set(0);
+
+		s.set(0xFD); //The stack starts here idk why it just does
+
+		setFlag(U, true);
+		setFlag(I, true);
+
+		totalCycles = 0;
+
+		// Reset takes time
+		cycles = 7;
+	}
+
+	public void irq() { //Interrupt request signal
+		//System.out.println("IRQ");
+
+		//If interrupts are allowed
+		//Not necessary anymore since the check needs to be in clockcycle too
+		//(Redo IRQ stuff pls=
+		if(getFlag(I) == 0) {
+			System.out.println("--------------   IRQ      ----------------------");
+
+			//Push PC to stack
+			pushWord(pc.get());
+
+			//Push status to stack
+			setFlag(B, false);
+			setFlag(U, true);
+			pushByte(status);
+
+			setFlag(I, true);
+
+			//Read new pc location from fixed address
+			pc.set(read(0xFFFE) | (read(0xFFFF) << 8));
+
+			cycles = 7;
+		}
+	}
+
+	public void nmi() { //Non maskable interrupt request signal
+		//Push PC to stack
+		pushWord(pc.get());
+
+		//Push status to stack
+		setFlag(B, false);
+		setFlag(U, true);
+		pushByte(status);
+
+		setFlag(I, true);
+
+		// Read new pc location from fixed address
+		pc.set(read(0xFFFA) | (read(0xFFFB) << 8));
+
+		cycles = 7;
+	}
+
+	/**
+	 * Convenience function for pushing an 8-bit value onto the stack
+	 */
+	void pushByte(int data) {
+		//The stack pointer always points at the next free spot in the stack
+		int stackHead = 0x100 + s.get();
+		write(stackHead, data & 0xFF);
+
+		s.decrement();
+	}
+
+	/**
+	 * Convenience function for popping an 8-bit value from the stack.
+	 * Returns the topmost value from the stack and removes it
+	 */
+	int popByte() {
+		//The stack pointer always points at the next free spot in the stack
+		s.increment();
+
+		int stackHead = 0x100 + s.get();
+
+		return read(stackHead);
+	}
+
+
+	/**
+	 * Convenience function for pushing a 16-bit value onto the stack
+	 * The word is pushed little endian (LSB toward top of the stack)
+	 */
+	void pushWord(int data) {
+		//Push high byte first
+		pushByte((byte) (data >>> 8));
+
+		//Push low byte last (top of stack)
+		pushByte((byte) data);
+	}
+
+	/**
+	 * Convenience function for popping a 16-bit value from the stack.
+	 * Combines the two topmost bytes from the stack in a little endian manner (LSB at top of stack),
+	 * removes them from the stack and returns the combined value.
+	 */
+	int popWord() {
+		int value;
+
+		//Read in lower byte from top of stack
+		value = popByte();
+		//Read in upper byte following
+		value |= popByte() << 8;
+
+		return value;
+	}
+
+
+
+	int getFlag(int flagBitMask) {
+		return status & flagBitMask;
+	}
+	void setFlag(int flagBitMask, boolean value) {
+		if(value) {
+			status |= flagBitMask;
+		} else {
+			status &= ~flagBitMask;
+		}
+	}
+
+
+	public void write(int addr, int data) { //16-Bit address, 8-Bit Data
+		addr &= 0xFFFF;
+		data &= 0xFF;
+
+		//OAM memory DMA transfer.
+		//Transfer 256 bytes from 0xDD00 until 0xDDFF to fill the OAM of the PPU
+		//Todo: Implement DMA properly
+		if(addr == 0x4014) {
+			//Odd cpu cycle results in extra idle cycle
+			//https://www.nesdev.org/wiki/PPU_OAM#:~:text=(%2B1%20on%20odd%20CPU%20cycles)
+			cycles += nes.clock.isPut ? 2 : 1;
+
+			for(int i = 0; i < 256; i++) {
+				int readAddr = (data << 8) | i;
+				bus.write(PPU.OAMDATA, bus.read(readAddr, false));
+				cycles += 2;
+			}
+			//In total this should have added either 513 or 514 cycles
+		}
+
+		bus.write(addr, data);
+	}
+
+	public int read(int addr, boolean bReadOnly) {
+		return bus.read(addr & 0xFFFF, bReadOnly) & 0xFF;
+	}
+	public int read(int addr) {
+		return read(addr, false) & 0xFF;
+	}
+
+}
