@@ -483,32 +483,58 @@ public class PPU extends BusDevice implements Tickable {
 		}
 	}
 
-	//Get the 8-Byte
-	public byte[] getPatternEntry(int halfSelect, int index, int bitPlaneSelect) {
-		//DCBA98 76543210 //PPU addresses within the pattern tables can be decoded as follows:
-		//---------------
-		//0HRRRR CCCCPTTT
-		//|||||| |||||+++- T: Fine Y offset, the row number within a tile
-		//|||||| ||||+---- P: Bit plane (0: "lower"; 1: "upper")
-		//|||||| ++++----- C: Tile column
-		//||++++---------- R: Tile row
-		//|+-------------- H: Half of sprite table (0: "left"; 1: "right")
-		//+--------------- 0: Pattern table is at $0000-$1FFF
-		byte[] data = new byte[8];
+    //Get the 8-Byte character entry from chr rom
+    public byte[] getPatternEntry(int halfSelect, int index, int bitPlaneSelect) {
+        //DCBA98 76543210 //PPU addresses within the pattern tables can be decoded as follows:
+        //---------------
+        //0HRRRR CCCCPTTT
+        //|||||| |||||+++- T: Fine Y offset, the row number within a tile
+        //|||||| ||||+---- P: Bit plane (0: "lower"; 1: "upper")
+        //|||||| ++++----- C: Tile column
+        //||++++---------- R: Tile row
+        //|+-------------- H: Half of sprite table (0: "left"; 1: "right")
+        //+--------------- 0: Pattern table is at $0000-$1FFF
+        byte[] data = new byte[8];
 
-		index &= 0xFF;
+        index &= 0xFF;
 
-		int addr = index << 4;
-		addr |= (halfSelect > 0) ? 0x1000 : 0; //Select Pattern table half
-		addr |= (bitPlaneSelect > 0) ? 0x8 : 0; //Select bitplane
-		for(int i = 0; i < 8; i++) {
-			addr &= ~0x7;
-			addr += i;
+        int addr = index << 4;
+        addr |= (halfSelect > 0) ? 0x1000 : 0; //Select Pattern table half
+        addr |= (bitPlaneSelect > 0) ? 0x8 : 0; //Select bitplane
+        for(int i = 0; i < 8; i++) {
+            addr &= ~0x7;
+            addr += i;
 
-			data[i] = (byte) ppuRead(addr);
-		}
-		return data;
-	}
+            data[i] = (byte) ppuRead(addr);
+        }
+        return data;
+    }
+
+    //Get the 8-Byte
+    public byte getPatternEntryRow(int halfSelect, int index, int bitPlaneSelect, int fineY) {
+        //DCBA98 76543210 //PPU addresses within the pattern tables can be decoded as follows:
+        //---------------
+        //0HRRRR CCCCPTTT
+        //|||||| |||||+++- T: Fine Y offset, the row number within a tile
+        //|||||| ||||+---- P: Bit plane (0: "lower"; 1: "upper")
+        //|||||| ++++----- C: Tile column
+        //||++++---------- R: Tile row
+        //|+-------------- H: Half of sprite table (0: "left"; 1: "right")
+        //+--------------- 0: Pattern table is at $0000-$1FFF
+        byte data;
+
+        index &= 0xFF;
+
+        int addr = index << 4;
+        addr |= (halfSelect > 0) ? 0x1000 : 0; //Select Pattern table half
+        addr |= (bitPlaneSelect > 0) ? 0x8 : 0; //Select bitplane
+
+        addr &= ~0b111;
+        addr += fineY;
+
+        data = (byte) ppuRead(addr);
+        return data;
+    }
 
 	private void renderSprites() {
 		//Sprite rendering depends on the following things:
@@ -639,8 +665,8 @@ public class PPU extends BusDevice implements Tickable {
 
 		int chrIndex;
 
-		byte[] bitplane0;
-		byte[] bitplane1;
+		byte bitplane0;
+		byte bitplane1;
 
 
 		int rowBits0 ;
@@ -652,12 +678,12 @@ public class PPU extends BusDevice implements Tickable {
 
 		for(int y = 0; y < SCREEN_HEIGHT; y++) {
 			chrIndex = ppuRead(0x2000| address);
-			bitplane0 = getPatternEntry(renderState.ppuCtrl.isSet(CTRL_B) ? 1 : 0, chrIndex, 0);
-			bitplane1 = getPatternEntry(renderState.ppuCtrl.isSet(CTRL_B) ? 1 : 0, chrIndex, 1);
+			bitplane0 = getPatternEntryRow(renderState.ppuCtrl.isSet(CTRL_B) ? 1 : 0, chrIndex, 0, fineY);
+			bitplane1 = getPatternEntryRow(renderState.ppuCtrl.isSet(CTRL_B) ? 1 : 0, chrIndex, 1, fineY);
 
 
-			rowBits0 = bitplane0[fineY] << 8;
-			rowBits1 = bitplane1[fineY] << 8;
+			rowBits0 = bitplane0 << 8;
+			rowBits1 = bitplane1 << 8;
 
 			colorShift0 = 0;
 			colorShift1 = 0;
@@ -695,8 +721,8 @@ public class PPU extends BusDevice implements Tickable {
 					}
 
 					chrIndex = ppuRead(0x2000 | address);
-					bitplane0 = getPatternEntry(renderState.ppuCtrl.isSet(CTRL_B) ? 1 : 0, chrIndex, 0);
-					bitplane1 = getPatternEntry(renderState.ppuCtrl.isSet(CTRL_B) ? 1 : 0, chrIndex, 1);
+					bitplane0 = getPatternEntryRow(renderState.ppuCtrl.isSet(CTRL_B) ? 1 : 0, chrIndex, 0, fineY);
+					bitplane1 = getPatternEntryRow(renderState.ppuCtrl.isSet(CTRL_B) ? 1 : 0, chrIndex, 1, fineY);
 
 
 
@@ -705,8 +731,8 @@ public class PPU extends BusDevice implements Tickable {
 					rowBits0 &= ~0xFF;
 
 
-					rowBits0 |= bitplane0[fineY] & 0xFF;
-					rowBits1 |= bitplane1[fineY] & 0xFF;
+					rowBits0 |= bitplane0 & 0xFF;
+					rowBits1 |= bitplane1 & 0xFF;
 
 
 					//The upper 3 bits of coarse X (coarse x is the lower 5 bits of the nametable address)

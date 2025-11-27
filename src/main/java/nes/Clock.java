@@ -44,7 +44,7 @@ public class Clock {
 		cycleAccumulator += 1;
 		if (cycleAccumulator >= cyclesPerSample) {
 			cycleAccumulator -= cyclesPerSample;
-			audio.sample();
+			audio.sample(apu.getVolume());
 		}
 
 

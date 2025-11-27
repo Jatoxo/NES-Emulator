@@ -70,8 +70,7 @@ public class Audio {
         });
     }
 
-    public void sample() {
-        double audioValue = apu.getVolume();
+    public void sample(double audioValue) {
 
         int sampleValue;
 
