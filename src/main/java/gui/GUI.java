@@ -1,6 +1,7 @@
 package gui;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import nes.EmulationListener;
 import nes.Nes;
 import nes.parsing.RomParser;
 import nes.parsing.UnsupportedRomException;
@@ -18,16 +19,16 @@ import java.util.Objects;
 
 
 
-public class GUI extends JFrame {
+public class GUI extends JFrame implements EmulationListener {
 	public final String EMU_NAME = "COCK";
 
-	private final NesPanel nesScreen = new NesPanel();
+	private final NesPanel nesScreen;
 	private final FPSThread fpsThread;
 	private long lastFrame = 0;
 
 	private PatternViewWindow patternViewWindow;
 
-	private final Nes nes;
+	public final Nes nes;
 
 
 	public static void main(String[] args) throws IOException, UnsupportedRomException, UnsupportedLookAndFeelException, ClassNotFoundException, InstantiationException, IllegalAccessException {
@@ -49,8 +50,13 @@ public class GUI extends JFrame {
 	public GUI() throws IOException, UnsupportedRomException {
 		setTitle(EMU_NAME);
 
+        this.nes = new Nes(this);
+
+        nesScreen = new NesPanel(this);
+
 		fpsThread = new FPSThread(this, 400);
 		fpsThread.start();
+
 
 		getContentPane().add(nesScreen, BorderLayout.CENTER);
 
@@ -60,7 +66,7 @@ public class GUI extends JFrame {
 		setupMenus();
 		setupFrame();
 
-		this.nes = new Nes(this);
+
 
 		patternViewWindow = new PatternViewWindow(nes);
 		addKeyListener(new PhysicalInput(nes));
@@ -116,92 +122,90 @@ public class GUI extends JFrame {
 
 	private void setupFrame() {
 
-		setFocusTraversalKeysEnabled(false);
+        setFocusTraversalKeysEnabled(false);
 
 
-		try {
-			Image appIcon = ImageIO.read(Objects.requireNonNull(getClass().getResource("/Nes_controller_square.png")));
-			setIconImage(appIcon);
-		} catch(IOException e) {
-			throw new RuntimeException(e);
-		}
+        try {
+            Image appIcon = ImageIO.read(Objects.requireNonNull(getClass().getResource("/Nes_controller_square.png")));
+            setIconImage(appIcon);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
 
-		GraphicsDevice gd = getGraphicsConfiguration().getDevice();
-		double height = gd.getDisplayMode().getHeight() / 1.5;
+        GraphicsDevice gd = getGraphicsConfiguration().getDevice();
+        double height = gd.getDisplayMode().getHeight() / 1.5;
 
-		setDefaultCloseOperation(EXIT_ON_CLOSE);
-		setMinimumSize(new Dimension(256, 260));
-		setSize((int) Math.round((height) / 0.9375), (int) Math.round(height));
-		setLocationRelativeTo(null);
-		setVisible(true);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setMinimumSize(new Dimension(256, 260));
+        setSize((int) Math.round((height) / 0.9375), (int) Math.round(height));
+        setLocationRelativeTo(null);
+        setVisible(true);
 
-		addWindowListener(new WindowAdapter() {
-			@Override
-			public void windowClosing(WindowEvent e) {
-				try {
-					nes.cartridge.storePersistentData();
-				} catch(IOException ex) {
-					throw new RuntimeException(ex);
-				}
-			}
-		});
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                try {
+                    nes.cartridge.storePersistentData();
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        });
 
-		new DropTarget(this, new DropTargetAdapter() {
-			@Override
-			public void dragOver(DropTargetDragEvent event) {
-				event.acceptDrag(DnDConstants.ACTION_LINK);
-			}
+        new DropTarget(this, new DropTargetAdapter() {
+            @Override
+            public void dragOver(DropTargetDragEvent event) {
+                event.acceptDrag(DnDConstants.ACTION_LINK);
+            }
 
-			@Override
-			public void drop(DropTargetDropEvent event) {
-				event.acceptDrop(DnDConstants.ACTION_LINK);
+            @Override
+            public void drop(DropTargetDropEvent event) {
+                event.acceptDrop(DnDConstants.ACTION_LINK);
 
-				// Get the transfer which can provide the dropped item data
-				Transferable transferable = event.getTransferable();
+                // Get the transfer which can provide the dropped item data
+                Transferable transferable = event.getTransferable();
 
-				try {
-					// If the drop items are files
-					if(event.getCurrentDataFlavors()[0].isFlavorJavaFileListType()) {
-						// Get all the dropped files
-						java.util.List<File> droppedFiles = (java.util.List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
-						// If there are multiple, load only one
-						File file = droppedFiles.get(0);
-						nes.insertCartridge(RomParser.parseRom(file.getPath()));
-					}
+                try {
+                    // If the drop items are files
+                    if (event.getCurrentDataFlavors()[0].isFlavorJavaFileListType()) {
+                        // Get all the dropped files
+                        java.util.List<File> droppedFiles = (java.util.List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
+                        // If there are multiple, load only one
+                        File file = droppedFiles.get(0);
+                        nes.insertCartridge(RomParser.parseRom(file.getPath()));
+                    }
 
-				} catch(Exception e) {
-					e.printStackTrace();
-				}
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
 
-				// Inform that the drop is complete
-				event.dropComplete(true);
-			}
-		});
-
-
-	}
+                // Inform that the drop is complete
+                event.dropComplete(true);
+            }
+        });
 
 
-	public void renderScreen(byte[] screen) {
-		nesScreen.updateScreen(screen);
-		if(patternViewWindow.isVisible()) {
-			patternViewWindow.update();
-		}
+    }
 
 
+    @Override
+    public void frameComplete() {
+        nesScreen.updateScreen();
 
-		long elapsed = System.nanoTime() - lastFrame;
-		elapsed = Math.round(elapsed / 1000000.0);
+        if(patternViewWindow.isVisible()) {
+            patternViewWindow.update();
+        }
 
-		if(elapsed != 0) {
-			int fps = (int) Math.round(1000.0 / elapsed);
-			fpsThread.addFPSValue(fps);
-		}
+        long elapsed = System.nanoTime() - lastFrame;
+        elapsed = Math.round(elapsed / 1000000.0);
 
-		lastFrame = System.nanoTime();
-	}
+        if(elapsed != 0) {
+            int fps = (int) Math.round(1000.0 / elapsed);
+            fpsThread.addFPSValue(fps);
+        }
 
-
+        lastFrame = System.nanoTime();
+    }
 }
 

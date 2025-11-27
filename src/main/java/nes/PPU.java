@@ -3,6 +3,8 @@ package nes;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.stream.Stream;
 
 public class PPU extends BusDevice implements Tickable {
 	public static final int SCREEN_WIDTH = 256;
@@ -26,8 +28,8 @@ public class PPU extends BusDevice implements Tickable {
 	//Screen buffer of palette ram index buffer, one byte corresponds to one pixel and represents an address into palette ram
 	byte[] indexBuffer = new byte[SCREEN_WIDTH * SCREEN_HEIGHT];
 
-	//RGB output buffer, three bytes correspond to one pixel and represent an RGB value
-	byte[] outputBuffer = new byte[SCREEN_WIDTH * SCREEN_HEIGHT * 3];
+	//RGB output buffer, one int corresponds to one pixel and represent an RGB value
+	public int[] outputBuffer = new int[SCREEN_WIDTH * SCREEN_HEIGHT];
 
 
 	public Palette palette;
@@ -383,7 +385,8 @@ public class PPU extends BusDevice implements Tickable {
 		if(scanlineCycle == 0 && scanline == 0) {
 			frameComplete = false;
 
-			renderBackground2();
+            //Todo: IDK if this is needed (pls don't fix just make new ppu)
+			//renderBackground2();
 			renderSprites();
 
 		} else if(scanlineCycle == 304) {
@@ -416,7 +419,6 @@ public class PPU extends BusDevice implements Tickable {
 			renderSprites();
 			renderBuffer();
 
-			nes.gui.renderScreen(outputBuffer);
 
 			frameComplete = true;
 			sprite0HitScanline = -1;
@@ -596,24 +598,19 @@ public class PPU extends BusDevice implements Tickable {
 			//Obtain the index into palette ram for the current pixel
 			int paletteIndex = indexBuffer[i];
 
-			//If the two LSB are 0, the pixel is transparent and the universal background color is used (index 0)
-			if((paletteIndex & 0b11) == 0)
-				paletteIndex = 0;
+            if((paletteIndex & 0x3) == 0) {
+                //PPU rendering is special, when it reads a transparent pixel, it always uses the universal
+                //background color
+                paletteIndex = 0;
+            }
 
 			//Get the byte which describes the color from palette ram
-			int colorByte = palleteRam[paletteIndex];
-
-			//Mask to 6 Bits (Upper two bits of color are ignored)
-			colorByte &= 0b11_1111;
+            int colorByte = (byte) (palleteRam[paletteIndex] & 0b0011_1111);
 
 			//Look up the RGB value for this byte from the palette
 			int rgbOut = palette.colors[colorByte].getRGB();
 
-			int rgbBufferIndex = 3 * i;
-			outputBuffer[rgbBufferIndex]     = (byte) (rgbOut >> 16);
-			outputBuffer[rgbBufferIndex + 1] = (byte) (rgbOut >> 8);
-			outputBuffer[rgbBufferIndex + 2] = (byte) rgbOut;
-
+            outputBuffer[i] = rgbOut;
 		}
     }
 

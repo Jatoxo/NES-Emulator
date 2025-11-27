@@ -38,8 +38,11 @@ public class Nes {
 
 	Audio audio;
 
-	public Nes(GUI gui) throws IOException, UnsupportedRomException {
-		this.gui = gui;
+
+    EmulationListener listener;
+
+	public Nes(EmulationListener listener) throws IOException, UnsupportedRomException {
+	    this.listener = listener;
 
 
 		cpu = new Jtx6502(this);
@@ -71,12 +74,15 @@ public class Nes {
 		insertCartridge(cart);
 	}
 
+    //TODO: maybe separate console logic, emulation logic, and gui logic?s
 	public void start() {
 
 		while(!paused) {
 			long lastTime = System.nanoTime();
 
 			advanceFrame();
+
+            listener.frameComplete();
 			
 			//Todo this isn't accurate at all
 			while(limitSpeed && System.nanoTime() - lastTime < 16666667);

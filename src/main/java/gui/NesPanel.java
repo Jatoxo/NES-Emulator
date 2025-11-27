@@ -1,5 +1,7 @@
 package gui;
 
+import nes.Nes;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.color.ColorSpace;
@@ -9,24 +11,31 @@ import java.awt.image.*;
 public class NesPanel extends JPanel {
     public BufferedImage screen;
 
-    public NesPanel() {
-        //BufferedImage doesn't have a byte RGB format, so we need to create one manually
-        ColorSpace colorSpace = ColorSpace.getInstance(ColorSpace.CS_sRGB);
-        ColorModel model = new ComponentColorModel(colorSpace, false, true, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
-        WritableRaster raster = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, 256, 240, 3, null);
+    private final int[] outputBuffer;
 
-        screen = new BufferedImage(model, raster, true, null);
+    public NesPanel(GUI gui) {
+        outputBuffer = gui.nes.ppu.outputBuffer;
+
+        // match the masks with DirectColorModel
+        ColorModel cm = new DirectColorModel(32, 0x00FF0000, 0x0000FF00, 0x000000FF);
+        DataBufferInt dataBuffer = new DataBufferInt(outputBuffer, outputBuffer.length);
+        WritableRaster raster2 = Raster.createPackedRaster(dataBuffer, 256, 240, 256,
+                new int[]{0xFF0000, 0x00FF00, 0x0000FF}, null);
+
+        screen = new BufferedImage(cm, raster2, true, null);
+
+        //screen = new BufferedImage(256, 240, BufferedImage.TYPE_INT_RGB);
     }
 
-    public void updateScreen(byte[] ppuOutputBuffer) {
+    public void updateScreen() {
         //screen.getRaster().setDataElements(0, 0, 256, 240, ppuOutputBuffer);
 
         //Obtain the underlying buffer from the BufferedImage
-        byte[] buffer = ((DataBufferByte) screen.getRaster().getDataBuffer()).getData();
+        //int[] buffer = ((DataBufferInt) screen.getRaster().getDataBuffer()).getData();
 
         //The format of ppuOutputBuffer exactly matches the format of the BufferedImage,
         //so we can just copy the data over
-        System.arraycopy(ppuOutputBuffer, 0, buffer, 0, ppuOutputBuffer.length);
+        //System.arraycopy(ppuOutputBuffer, 0, buffer, 0, ppuOutputBuffer.length);
 
         repaint();
     }
