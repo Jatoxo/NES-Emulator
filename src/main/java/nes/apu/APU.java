@@ -3,9 +3,8 @@ package nes.apu;
 import nes.BusDevice;
 import nes.BusValue;
 import nes.Nes;
-import nes.Tickable;
 
-public class APU extends BusDevice implements Tickable, Sequencer.SequencerListener {
+public class APU extends BusDevice {
 
     private final PulseChannel pulse1 = new PulseChannel(0);
     private final PulseChannel pulse2 = new PulseChannel(1);
@@ -13,7 +12,7 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
     private final NoiseChannel noise = new NoiseChannel();
 
     //Sequencer responsible for ticking other components
-    public final FrameSequencerer frameSequencer = new FrameSequencerer(this, pulse1, pulse2, triangle, noise);
+    public final FrameSequencererer frameSequencer = new FrameSequencererer(this, pulse1, pulse2, triangle, noise);
 
 
     private final Nes nes;
@@ -23,7 +22,7 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
     private boolean inhibitInterrupts = false;
 
     //Whether an interrupt is currently triggered
-    private boolean triggerInterrupt = false;
+    private boolean  frameInterruptFlag = false;
 
     //Lookup table for the pulse channels. The maximum value is $F + $F = 30, so 31 entries are needed (because 0 is one)
     private double[] pulseLookup = new double[31];
@@ -65,20 +64,29 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
     /**
      * Called for every cpu cycle
      */
-    @Override
-    public void tick() {
+    public void clock(boolean isPut) {
+        //Get and put cycle are aligned to first and second half of APU cycle
+        if(isPut) {
+            pulse1.clockTimer();
+            pulse2.clockTimer();
+            noise.clockTimer();
+            //TODO: Where DMC??
+        }
+
+        // Triangle clocked on every cpu cycle
+        triangle.clockTimer();
+
+        frameSequencer.tick(isPut);
+
         //This is really hacky but probably should work?
         //I need a proper way to trigger IRQs whenever the line is high
         //For now just call the function as much as possible when needed lol
-        if(triggerInterrupt) {
+        /*if(frameInterruptFlag) {
             nes.cpu.raiseIRQ();
             //triggerInterrupt = false;
-        }
+        }*/
 
-        pulse1.clockTimer();
-        pulse2.clockTimer();
-        triangle.clockTimer();
-        noise.clockTimer();
+
 
 
         //audioValue = getVolume();
@@ -94,10 +102,10 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
         if(addr == 0x4015) {
             int result = 0;
 
-            if (triggerInterrupt) {
+            if(frameInterruptFlag) {
                 result |= 0b0100_0000;
             }
-            triggerInterrupt = false;
+            setInterruptFlag(false);
 
             boolean pulse1enabled = pulse1.lengthCounter.getCount() > 0;
             boolean pulse2enabled = pulse2.lengthCounter.getCount() > 0;
@@ -323,23 +331,15 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
                 //disabled.
 
                 //Reset divider and sequencer
-                frameSequencer.reset();
+                frameSequencer.resetDelayed();
 
                 inhibitInterrupts = (data & (1<<6)) > 0;
-
                 if(inhibitInterrupts) {
-                    triggerInterrupt = false;
+                    setInterruptFlag(false);
                 }
 
                 int sequencerMode = data >>> 7;
                 frameSequencer.setMode(sequencerMode);
-                //frameSequencer.switchSets(sequencerMode);
-
-                //If the mode flag is clear, the 4-step sequence is selected, otherwise the
-                //5-step sequence is selected and the sequencer is immediately clocked once.
-                if(sequencerMode == 1) {
-                    frameSequencer.advance();
-                }
 
 
                 break;
@@ -364,7 +364,7 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
 
         //$4015 is 0, all channels are disabled and interrupt flags are clear
         //Todo: Reset DMC
-        triggerInterrupt = false;
+        setInterruptFlag(false);
 
         pulse1.reset();
         pulse2.reset();
@@ -386,13 +386,24 @@ public class APU extends BusDevice implements Tickable, Sequencer.SequencerListe
 
 
     //Hooked up to the IRQ signal
-    @Override
-    public void tick(int step) {
-        if(inhibitInterrupts) {
-            return;
+
+    /**
+     * Sets the interrupt flag if interrupts are not being inhibited
+     * (
+     * @param value
+     */
+    public void setInterruptFlag(boolean value) {
+        if(value) {
+            if(inhibitInterrupts) {
+                return;
+            }
+
+            frameInterruptFlag = true;
+            nes.cpu.raiseIRQ();
+        } else {
+            frameInterruptFlag = false;
+            nes.cpu.releaseIRQ();
         }
-        //System.out.println("Set interrupt flag");
-        triggerInterrupt = true;
-        nes.cpu.raiseIRQ();
+
     }
 }

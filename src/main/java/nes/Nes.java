@@ -21,7 +21,7 @@ public class Nes {
 	public Jtx6502 cpu;
 	public PPU ppu;
 	public APU apu;
-	private final MasterClock clock;
+	public final Clock clock;
 	public ControllerPorts controllerPorts;
 	public GUI gui;
 
@@ -41,7 +41,8 @@ public class Nes {
 	public Nes(GUI gui) throws IOException, UnsupportedRomException {
 		this.gui = gui;
 
-		cpu = new Jtx6502();
+
+		cpu = new Jtx6502(this);
 		ppu = new PPU(this);
 		apu = new APU(this);
 
@@ -56,7 +57,8 @@ public class Nes {
 
 		cpu.bus.addBusDevice(ppu);
 
-		clock = new MasterClock(cpu, ppu, apu, audio);
+
+		clock = new Clock(this);
 
 		//insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
 
@@ -82,8 +84,11 @@ public class Nes {
 	}
 
 	public void advanceFrame() {
-		while(!ppu.frameComplete) {
-			clock.tick();
+		//Don't tick things while we're changing cartridge
+		synchronized(this) {
+			while(!ppu.frameComplete) {
+				clock.tick();
+			}
 		}
 		ppu.frameComplete = false;
 	}
@@ -95,32 +100,34 @@ public class Nes {
 	}
 
 	public void insertCartridge(Cartridge cart) {
-		clock.paused = true;
+		//OH lord
+		//clock.paused = true;
+		synchronized(this) {
 
-		//This is called from the GUI thread so in order to prevent issues
-		//a sleep is necessary for some reason
-		try {
-			sleep(50);
-		} catch(InterruptedException e) {
-			e.printStackTrace();
+			//This is called from the GUI thread so in order to prevent issues
+			//a sleep is necessary for some reason
+			//TODO: Check if it still is
+			try {
+				sleep(50);
+			} catch(InterruptedException e) {
+				e.printStackTrace();
+			}
+
+			cpu.bus.removeBusDevice(cartridge);
+			cartridge = cart;
+			cpu.bus.addBusDevice(cart);
+
+
+			ppu.connectCartridge(cartridge);
+
+			reset();
+
+			try {
+				sleep(50);
+			} catch(InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
-
-		cpu.bus.removeBusDevice(cartridge);
-		cartridge = cart;
-		cpu.bus.addBusDevice(cart);
-
-
-		ppu.connectCartridge(cartridge);
-
-		reset();
-
-		try {
-			sleep(50);
-		} catch(InterruptedException e) {
-			e.printStackTrace();
-		}
-
-		clock.paused = false;
 	}
 
 	public void connectController(Controller controller, int port) {

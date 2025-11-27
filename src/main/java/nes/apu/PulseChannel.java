@@ -12,10 +12,6 @@ public class PulseChannel {
     //The output ticks the duty sequencer (After an additional divide by 2), meaning smaller periods result in higher pitch
     Divider timerDivider = new Divider(0);
 
-    //Divides the timer output by 2
-    //The pulse channels divide the output of their timer by 2 before passing it to the duty sequencer
-    Divider timerOutputDivider = new Divider(1);
-
     //Determines the volume of the channel
     //The pulse channel, like the triangle and noise channel, outputs a 4-bit volume value
     //The source volume (0-15) is determined by the envelope unit. But the channel can be silenced by the length counter or sweep unit.
@@ -37,25 +33,6 @@ public class PulseChannel {
     public PulseChannel(int id) {
         secondPulse = id == 1;
         sweep.enableAltBehaviour(secondPulse);
-
-        //The frame sequencer clocks the Envelope, Length Counter and Sweep
-        //frameSequencer.addListener(FrameSequencer.ENVELOPES, envelope);
-        //frameSequencer.addListener(FrameSequencer.LENGTH_SWEEPS, lengthCounter);
-        //frameSequencer.addListener(FrameSequencer.LENGTH_SWEEPS, sweep);
-
-        //Pulse channel has 4 different sequences
-        /*
-        dutySequencer.addSet(8);
-        dutySequencer.addSet(8);
-        dutySequencer.addSet(8);
-        dutySequencer.addSet(8);
-
-        dutySequencer.getSet(0).addSequence(false, true);
-        dutySequencer.getSet(1).addSequence(false, true, true);
-        dutySequencer.getSet(2).addSequence(false, true, true, true, true);
-        dutySequencer.getSet(3).addSequence(true, false, false, true, true, true, true, true);
-
-         */
     }
 
 
@@ -64,12 +41,7 @@ public class PulseChannel {
      */
     public void clockTimer() {
         if(timerDivider.tick()) {
-
-            if(timerOutputDivider.tick()) {
-                dutySequencer.advance();
-            }
-
-
+            dutySequencer.advance();
         }
     }
 

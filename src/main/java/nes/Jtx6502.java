@@ -59,10 +59,11 @@ public class Jtx6502 implements Tickable {
 	private boolean raiseNMI = false;
 	private boolean raiseIRQ = false;
 
+	private Nes nes;
 
-	public Jtx6502() {
+	public Jtx6502(Nes nes) {
 		this.bus = new Bus();
-
+		this.nes = nes;
 		/*
 		statusF.addFlag("Carry", "C", C);
 		statusF.addFlag("Zero", "Z", Z);
@@ -84,6 +85,10 @@ public class Jtx6502 implements Tickable {
 		//TODO: This needs work. Interrupt is level sensitive, so someone might call this function but only afterwards
 		// the inhibit flag gets cleared. In that case an interrupt still needs to be triggered.
 		raiseIRQ = true;
+	}
+
+	public void releaseIRQ() {
+		raiseIRQ = false;
 	}
 
 	public void logCpuState() {
@@ -1025,10 +1030,11 @@ public class Jtx6502 implements Tickable {
 
 		//OAM memory DMA transfer.
 		//Transfer 256 bytes from 0xDD00 until 0xDDFF to fill the OAM of the PPU
+		//Todo: Implement DMA properly
 		if(addr == 0x4014) {
 			//Odd cpu cycle results in extra idle cycle
 			//https://www.nesdev.org/wiki/PPU_OAM#:~:text=(%2B1%20on%20odd%20CPU%20cycles)
-			cycles += ((totalCycles & 1) == 0) ? 1 : 2;
+			cycles += nes.clock.isPut ? 2 : 1;
 
 			for(int i = 0; i < 256; i++) {
 				int readAddr = (data << 8) | i;

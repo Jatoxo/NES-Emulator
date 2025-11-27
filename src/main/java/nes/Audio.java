@@ -5,7 +5,7 @@ import nes.apu.APU;
 
 import javax.sound.sampled.*;
 
-public class Audio implements Tickable {
+public class Audio {
 
 
     private final APU apu;
@@ -70,8 +70,7 @@ public class Audio implements Tickable {
         });
     }
 
-    @Override
-    public void tick() {
+    public void sample() {
         double audioValue = apu.getVolume();
 
         int sampleValue;

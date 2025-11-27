@@ -1,77 +1,59 @@
 package nes;
 
+import nes.apu.APU;
+
+import java.security.interfaces.ECPublicKey;
 import java.util.*;
 
 public class Clock {
-
-	private static class Listener {
-		private final Tickable tickable;
-		private final int divisor;
-		private int step;
-		private long cycles;
-
-		public Listener(Tickable listener) {
-			this(listener, 1);
-		}
-		public Listener(Tickable listener, int divisor) {
-			this.tickable = listener;
-			this.divisor = divisor;
-			this.step = 0;
-
-			cycles = 0;
-		}
-
-		public void tick() {
-			tickable.tick();
-			cycles++;
-		}
-	}
-
-	private long cycles;
-
-	public volatile boolean doTicks;
-
-	ArrayList<Listener> listeners;
+	private final Jtx6502 cpu;
+	private final PPU ppu;
+	private final APU apu;
+	private final Audio audio;
 
 
-	Clock(Tickable... listeners) {
-		this.listeners = new ArrayList<>();
+	double cyclesPerSample = (double) 1_789_773 / 44_100;
+	double cycleAccumulator = 0;
 
-		for(Tickable listener : listeners) {
-			this.listeners.add(new Listener(listener));
-		}
+	// Every cycle corresponds to one CPU cycle
+	private long totalCycles = 0;
+
+	public boolean isPut = false;
+
+
+	public Clock(Nes nes) {
+		this.cpu = nes.cpu;
+		this.ppu = nes.ppu;
+		this.apu = nes.apu;
+		this.audio = nes.audio;
 	}
 
 
-
-	public void addListener(Tickable listener) {
-		addListener(listener, 1);
-
-	}
-	public void addListener(Tickable listener, int divisor) {
-		listeners.add(new Listener(listener, divisor));
-	}
-
-
+	//Advance the clock by one CPU cycle
 	public void tick() {
+		cpu.clockCycle();
+		ppu.clock();
+		ppu.clock();
+		ppu.clock();
 
-		for(Listener listener : listeners) {
-			if(listener.step <= 0) {
-				if(doTicks) {
-					listener.step = listener.divisor;
-					listener.tick();
+		//This clocks the pulse, triangle, noise and DMC channels
+		//Only the triangle channel clocks at every step, others clock at half the rate
+		apu.clock(isPut);
 
-				}
-			}
-			listener.step--;
+
+		cycleAccumulator += 1;
+		if (cycleAccumulator >= cyclesPerSample) {
+			cycleAccumulator -= cyclesPerSample;
+			audio.sample();
 		}
 
 
-		cycles++;
+		isPut = !isPut;
+		totalCycles++;
 	}
 
 
 	public void reset() {
-		cycles = 0;
+		totalCycles = 0;
 	}
 }

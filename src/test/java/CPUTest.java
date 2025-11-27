@@ -1,5 +1,9 @@
+import gui.GUI;
+import nes.Clock;
 import nes.Instruction;
 import nes.Jtx6502;
+import nes.Nes;
+import nes.parsing.UnsupportedRomException;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -137,7 +141,14 @@ public class CPUTest {
         }
 
 
-        Jtx6502 cpu = new Jtx6502();
+        Jtx6502 cpu = null;
+        try {
+            cpu = new Jtx6502(new Clock(new Nes(new GUI())));
+        } catch(IOException e) {
+            throw new RuntimeException(e);
+        } catch(UnsupportedRomException e) {
+            throw new RuntimeException(e);
+        }
 
         BusWatcher busWatcher = new BusWatcher();
 

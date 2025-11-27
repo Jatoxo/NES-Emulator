@@ -256,7 +256,7 @@ public class PPU extends BusDevice implements Tickable {
 
 
 
-	private void clock() {
+	public void clock() {
 		totalCycles++;
 
 		if(scanline == -1) { //pre-render scanline

@@ -25,33 +25,14 @@ public class MasterClock {
     }
 
     public void tick() {
-        if(paused) {
-            return;
-        }
-
-        if(cpuStep == 0) {
-            cpuStep = 12;
-            cpu.clockCycle();
-            apu.tick();
-        }
-        cpuStep--;
-
-
-        if(ppuStep == 0) {
-            ppuStep = 4;
-            ppu.tick();
-        }
-        ppuStep--;
-
 
         if(audioStep == 0) {
             audioStep = 486;
-            audio.tick();
+            //audio.tick();
         }
         audioStep--;
 
-        //Todo: Potentially optimize apu by only running it when requesting the volume or before writing / reading a register
-        apu.frameSequencer.tick();
+
 
     }
 }
