@@ -1,6 +1,7 @@
 package nes.parsing;
 
 import nes.Cartridge;
+import nes.FilePersistence;
 import nes.mappers.*;
 
 public class INESRom extends ROM {
@@ -14,8 +15,6 @@ public class INESRom extends ROM {
 
     public iNESHeader header;
     public iNESVersion version;
-
-
 
     //Referenced from https://www.nesdev.org/wiki/INES
     public class iNESHeader {
@@ -56,8 +55,8 @@ public class INESRom extends ROM {
             return (flags6 & 0x02) > 0;
         }
 
-        public Mapper.MirrorMode getMirrorMode() {
-            return (flags6 & 1) > 0 ? Mapper.MirrorMode.VERTICAL : Mapper.MirrorMode.HORIZONTAL;
+        public ROM.MirrorMode getMirrorMode() {
+            return (flags6 & 1) > 0 ? MirrorMode.VERTICAL : ROM.MirrorMode.HORIZONTAL;
         }
     }
 
@@ -83,50 +82,10 @@ public class INESRom extends ROM {
         System.out.println("Has persistent memory: " + header.hasPersistentMemory());
         System.out.println("Mirror mode: " + header.getMirrorMode());
         System.out.println("------------------");
-
-
     }
 
-    public Cartridge parseRom() throws UnsupportedRomException {
-        int mapperId = getMapperId();
 
-        Mapper mapper;
 
-        //Todo: This shouldn't be specific to iNES roms
-        switch(mapperId) {
-            case Mapper.NROM:
-                mapper = new NROM(getProgramRom(), getCharacterRom(), header.getMirrorMode());
-                break;
-
-            case Mapper.MMC1:
-                mapper = new MMC1(getProgramRom(), header.pgrRomChunks, getCharacterRom(), Math.max(header.chrRomChunks, 1));
-                break;
-
-            case Mapper.AXROM:
-                mapper = new AxROM(getProgramRom());
-                break;
-
-            case Mapper.UXROM:
-                mapper = new UxROM(getProgramRom(), getCharacterRom(), header.getMirrorMode());
-                break;
-
-            case Mapper.CNROM:
-                mapper = new CNROM(getProgramRom(), getCharacterRom(), header.getMirrorMode());
-                break;
-
-            default:
-                throw new UnsupportedRomException("Mapper " + mapperId + " is not supported");
-        }
-
-        return new Cartridge(
-                this,
-                header.pgrRomChunks,
-                header.chrRomChunks,
-                mapper,
-                header.hasPersistentMemory(),
-                header.hasTrainer()
-        );
-    }
 
     @Override
     public byte[] getProgramRom() {
@@ -165,4 +124,15 @@ public class INESRom extends ROM {
 
         //int mapperId = (flags6 & mapIdLo) | ((flags7 & mapIdHi) << 4);
     }
+
+    public ROM.MirrorMode getMirrorMode() {
+        return header.getMirrorMode();
+    }
+
+    @Override
+    public boolean hasPersistentMemory() {
+        return header.hasPersistentMemory();
+    }
+
+
 }

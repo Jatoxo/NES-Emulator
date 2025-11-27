@@ -58,12 +58,15 @@ public class MMC1 extends Mapper {
     private byte programRomBank = 0;
 
 
-    public MMC1(byte[] prgRom, int prgChunks, byte[] chrRom, int chrChunks) {
+    public MMC1(byte[] prgRom, byte[] chrRom) {
         super(MMC1);
 
+        //16kb chunks
+        int bankCount = prgRom.length / Mapper.SIZE_16KiB;
+
         //Split the PRG ROM into 16kb chunks
-        this.prgRom = new byte[prgChunks][16384];
-        for(int i = 0; i < prgChunks; i++) {
+        this.prgRom = new byte[bankCount][16384];
+        for(int i = 0; i < bankCount; i++) {
             System.arraycopy(prgRom, i * 16384, this.prgRom[i], 0, 16384);
         }
 
@@ -75,8 +78,9 @@ public class MMC1 extends Mapper {
         if(usesChrRam) {
             this.chrRom = new byte[1][8192];
         } else {
-            this.chrRom = new byte[chrChunks * 2][4096];
-            for(int i = 0; i < chrChunks * 2; i++) {
+            int chrBankCount = chrRom.length / Mapper.SIZE_8KiB;
+            this.chrRom = new byte[chrBankCount * 2][4096];
+            for(int i = 0; i < chrBankCount * 2; i++) {
                 System.arraycopy(chrRom, i * 4096, this.chrRom[i], 0, 4096);
             }
         }

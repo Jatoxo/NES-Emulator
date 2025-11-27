@@ -1,6 +1,7 @@
 package gui;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import nes.Cartridge;
 import nes.EmulationListener;
 import nes.Nes;
 import nes.parsing.RomParser;
@@ -31,7 +32,7 @@ public class GUI extends JFrame implements EmulationListener {
 	public final Nes nes;
 
 
-	public static void main(String[] args) throws IOException, UnsupportedRomException, UnsupportedLookAndFeelException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+	public static void main(String[] args) throws UnsupportedLookAndFeelException, ClassNotFoundException, InstantiationException, IllegalAccessException {
 		try {
 			UIManager.setLookAndFeel(new FlatLightLaf());
 		} catch(Exception e) {
@@ -39,6 +40,22 @@ public class GUI extends JFrame implements EmulationListener {
 		}
 
 		GUI gui = new GUI();
+
+
+        //insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
+        //MM 2869
+        //Cartridge cart = RomParser.parseRom("D:\\Emulators\\NES\\ROMs\\Best NES Games\\Mario\\Super Mario Bros. (World).nes");
+
+        Cartridge cart = null;
+        try {
+            cart = RomParser.parseRom("rom/AccuracyCoin.nes");
+        } catch (Exception e) {
+            System.out.println("Couldn't load rom");
+        }
+
+
+        gui.nes.insertCartridge(cart);
+
 		gui.nes.start();
 	}
 
@@ -47,7 +64,7 @@ public class GUI extends JFrame implements EmulationListener {
 
 
 
-	public GUI() throws IOException, UnsupportedRomException {
+	public GUI() {
 		setTitle(EMU_NAME);
 
         this.nes = new Nes(this);

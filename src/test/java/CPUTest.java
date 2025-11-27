@@ -141,14 +141,8 @@ public class CPUTest {
         }
 
 
-        Jtx6502 cpu = null;
-        try {
-            cpu = new Jtx6502(new Clock(new Nes(new GUI())));
-        } catch(IOException e) {
-            throw new RuntimeException(e);
-        } catch(UnsupportedRomException e) {
-            throw new RuntimeException(e);
-        }
+
+        Jtx6502 cpu = new Jtx6502(new Nes(new GUI()));
 
         BusWatcher busWatcher = new BusWatcher();
 

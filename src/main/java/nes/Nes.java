@@ -41,7 +41,7 @@ public class Nes {
 
     EmulationListener listener;
 
-	public Nes(EmulationListener listener) throws IOException, UnsupportedRomException {
+	public Nes(EmulationListener listener) {
 	    this.listener = listener;
 
 
@@ -63,15 +63,7 @@ public class Nes {
 
 		clock = new Clock(this);
 
-		//insertCartridge("D:\\Users\\Jatoxo\\Downloads\\nestest.nes");
 
-		//MM 2869
-		//Cartridge cart = RomParser.parseRom("D:\\GamesSoftware\\ZZ Emulators\\NES\\Games\\Test\\apu_test.nes");
-		//Cartridge cart = RomParser.parseRom("D:\\Emulators\\NES\\ROMs\\Best NES Games\\Mario\\Super Mario Bros. (World).nes");
-		//Cartridge cart = RomParser.parseRom("D:\\GamesSoftware\\ZZ Emulators\\NES\\Games\\NESroms\\USA\\Legend of Zelda, The (U) (PRG 0).nes");
-		Cartridge cart = RomParser.parseRom("rom/AccuracyCoin.nes");
-
-		insertCartridge(cart);
 	}
 
     //TODO: maybe separate console logic, emulation logic, and gui logic?s
@@ -106,6 +98,9 @@ public class Nes {
 	}
 
 	public void insertCartridge(Cartridge cart) {
+        if(cart == null) {
+            cart = new DummyCartridge();
+        }
 		//OH lord
 		//clock.paused = true;
 		synchronized(this) {
