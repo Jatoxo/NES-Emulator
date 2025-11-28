@@ -2,7 +2,6 @@ package emu.nes;
 
 import emu.Audio;
 import emu.EmulationListener;
-import emu.gui.GUI;
 import emu.nes.input.Controller;
 import emu.nes.input.ControllerPorts;
 import emu.nes.input.StandardController;
@@ -52,9 +51,11 @@ public class Nes {
 
 
 		clock = new Clock(this);
-
-
 	}
+
+    public Nes() {
+        this(null);
+    }
 
     //TODO: maybe separate console logic, emulation logic, and gui logic?s
 	public void start() {
@@ -64,7 +65,9 @@ public class Nes {
 
 			advanceFrame();
 
-            listener.frameComplete();
+            if(listener != null) {
+                listener.frameComplete();
+            }
 			
 			//Todo this isn't accurate at all
 			while(limitSpeed && System.nanoTime() - lastTime < 16666667);

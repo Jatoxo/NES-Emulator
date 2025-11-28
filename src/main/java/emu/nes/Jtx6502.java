@@ -853,6 +853,7 @@ public class Jtx6502 {
 		return 0;//no
 	}
 
+    //Todo: Why is pageCrossed even here??
 	private void handleBranch(boolean branchTaken, boolean pageCrossed, int offset) {
 
 		if(branchTaken) {
