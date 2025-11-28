@@ -97,11 +97,6 @@ public class Nes {
 		//OH lord
 		//clock.paused = true;
 		synchronized(this) {
-
-			//This is called from the GUI thread so in order to prevent issues
-			//a sleep is necessary for some reason
-			//TODO: Check if it still is
-
 			cpu.bus.removeBusDevice(cartridge);
 			cartridge = cart;
 			cpu.bus.addBusDevice(cart);

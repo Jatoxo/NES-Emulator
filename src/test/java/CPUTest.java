@@ -24,13 +24,9 @@ public class CPUTest {
 
                 String hexop = testFile.getName().substring(0, testFile.getName().length() - 5);
 
-                if(!hexop.equalsIgnoreCase("be")) {
-                    //continue;
-                }
                 int opcode = Integer.parseInt(hexop, 16);
 
                 Instruction testedInstruction = Instruction.fromOpCode(opcode);
-
                 if(testedInstruction.mnemonic.equals("???")) {
                     continue;
                 }
@@ -133,14 +129,7 @@ public class CPUTest {
     }
 
     public static boolean runTest(HarteTest test, boolean ignoreBusHistory) {
-
-        if(test.name.equals("be 2c cf")) {
-            //System.out.println("This one");
-        }
-
-
-
-        Jtx6502 cpu = new Jtx6502(new Nes(new GUI()));
+        Jtx6502 cpu = new Jtx6502(new Nes());
 
         BusWatcher busWatcher = new BusWatcher();
 
