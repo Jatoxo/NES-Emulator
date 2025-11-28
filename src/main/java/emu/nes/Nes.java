@@ -22,6 +22,7 @@ public class Nes {
 	public final Clock clock;
 	public ControllerPorts controllerPorts;
 
+	public static double REFRESH_RATE = 60.0988;
 	public boolean limitSpeed = true;
 
 
@@ -70,7 +71,7 @@ public class Nes {
             }
 			
 			//Todo this isn't accurate at all
-			while(limitSpeed && System.nanoTime() - lastTime < 16666667);
+			while(limitSpeed && System.nanoTime() - lastTime < ((1 / REFRESH_RATE) * 1_000_000_000));
 		}
 	}
 
