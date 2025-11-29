@@ -76,7 +76,7 @@ public class MMC1 extends Mapper {
         this.usesChrRam = chrRom == null;
 
         if(usesChrRam) {
-            this.chrRom = new byte[1][8192];
+            this.chrRom = new byte[2][8192 / 2];
         } else {
             int chrBankCount = chrRom.length / Mapper.SIZE_8KiB;
             this.chrRom = new byte[chrBankCount * 2][4096];
