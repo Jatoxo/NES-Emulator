@@ -31,7 +31,7 @@ public class GUI extends JFrame implements EmulationListener {
 	public final Nes nes;
 
 
-	public static void main(String[] args) throws UnsupportedLookAndFeelException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+	static void main() throws UnsupportedLookAndFeelException, ClassNotFoundException, InstantiationException, IllegalAccessException {
 		try {
 			UIManager.setLookAndFeel(new FlatLightLaf());
 		} catch(Exception e) {

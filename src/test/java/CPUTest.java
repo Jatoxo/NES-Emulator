@@ -13,7 +13,7 @@ import java.nio.file.Files;
 
 public class CPUTest {
 
-    public static void main(String[] args) {
+    static void main() {
 
         try {
             File file = new File(CPUTest.class.getResource("TomHarteTests/").getFile());
