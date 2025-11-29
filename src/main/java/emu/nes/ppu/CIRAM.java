@@ -25,7 +25,7 @@ public class CIRAM implements PPUBusDevice {
 		//TODO: Checking mirror mode for every read is very expensive
 		// (Idea: MirrorMode abstract class with inheriting mirroring implementations)
 		// (Idea 2: Do address translation in mapper (Or ask mapper what CIRAM A10 is for this address)
-		Mapper.MirrorMode mirrorMode = nes.cartridge.getMirrorMode(addr);
+		Mapper.MirrorMode mirrorMode = nes.cartridge.getMirrorMode();
 
 		switch(mirrorMode) {
 			case HORIZONTAL:

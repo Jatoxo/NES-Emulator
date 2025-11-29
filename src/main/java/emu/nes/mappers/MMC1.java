@@ -7,11 +7,6 @@ public class MMC1 extends Mapper {
     //TODO: The CHR rom bank select shenanigans
     //https://www.nesdev.org/wiki/MMC1#iNES_Mapper_001:~:text=use%20this%20region.-,iNES%20Mapper%20001,-iNES%20Mapper%20001
 
-    //Banks of 16kb PRG ROM chunks
-    private final byte[][] prgRom;
-
-    //Banks of 4kb CHR ROM chunks
-    private final byte[][] chrRom;
 
     //8kb of PRG RAM
     //Todo: Different MMC1 boards have different amounts of PRG RAM
@@ -24,27 +19,19 @@ public class MMC1 extends Mapper {
     //It starts out with bit 4 set, and the other bits cleared
     private byte shiftRegister = 0b10000;
 
-    //0: one-screen (lower nametable)
-    //1: one-screen (upper nametable)
-    //2: vertical
-    //3: horizontal
-    private int mirrorMode = 0;
-    //Same value but as enum for caching speed
-    private MirrorMode mirrorModeEnum = MirrorMode.ONE_SCREEN_FIRST;
 
     //0,1: switch 32 KB at $8000, ignoring low bit of bank number
     //  2: fix first bank at $8000 and switch 16 KB bank at $C000
     //  3: fix last bank at $C000 and switch 16 KB bank at $8000
     private byte programRomBankMode = 3;
 
-
     //CHR ROM bank mode
     // 0 : switch 8 KB at a time;
     // 1 : switch two separate 4 KB banks
     private boolean characterRom4kbMode = false;
 
-    private boolean usesChrRam;
-
+    private final int prgBankCount;
+    private final int chrBankCount;
 
 
     //Select 4 KB or 8 KB CHR bank at PPU $0000 (low bit ignored in 8 KB mode)
@@ -53,38 +40,19 @@ public class MMC1 extends Mapper {
     //Select 4 KB CHR bank at PPU $1000 (ignored in 8 KB mode)
     private byte characterRomBank1 = 0;
 
-
     //Select 16 KB PRG ROM bank (low bit ignored in 32 KB mode)
     private byte programRomBank = 0;
 
+    MirrorMode[] mirrorModesById = {MirrorMode.ONE_SCREEN_FIRST, MirrorMode.ONE_SCREEN_SECOND, MirrorMode.VERTICAL, MirrorMode.HORIZONTAL};
+
 
     public MMC1(byte[] prgRom, byte[] chrRom) {
-        super(MMC1);
+        super(prgRom, chrRom, MirrorMode.ONE_SCREEN_FIRST, MMC1);
 
         //16kb chunks
-        int bankCount = prgRom.length / Mapper.SIZE_16KiB;
+        prgBankCount = prgRom.length / Mapper.SIZE_16KiB;
 
-        //Split the PRG ROM into 16kb chunks
-        this.prgRom = new byte[bankCount][16384];
-        for(int i = 0; i < bankCount; i++) {
-            System.arraycopy(prgRom, i * 16384, this.prgRom[i], 0, 16384);
-        }
-
-        //Split the CHR ROM into 4kb chunks
-        //chrChunks is amount of 8kb chunks, so we need to double it
-
-        this.usesChrRam = chrRom == null;
-
-        if(usesChrRam) {
-            this.chrRom = new byte[2][8192 / 2];
-        } else {
-            int chrBankCount = chrRom.length / Mapper.SIZE_8KiB;
-            this.chrRom = new byte[chrBankCount * 2][4096];
-            for(int i = 0; i < chrBankCount * 2; i++) {
-                System.arraycopy(chrRom, i * 4096, this.chrRom[i], 0, 4096);
-            }
-        }
-
+        chrBankCount = chrRom == null ? 0 : chrRom.length / SIZE_4KiB;
     }
 
     /**
@@ -116,14 +84,15 @@ public class MMC1 extends Mapper {
                     //Bank is 4-Bit value. Lower bit is ignored in this 32kb chunk mode
                     byte bankSelect = (byte) (getCurrentProgramBank() & 0b1110);
 
-                    return Byte.toUnsignedInt(prgRom[bankSelect][bankAddress]);
+                    return readBank(programROM, SIZE_16KiB, bankSelect, bankAddress);
+                    //return Byte.toUnsignedInt(prgRom[bankSelect][bankAddress]);
                 case 2:
                     //This bank is fixed to the first bank in this mode
-                    return Byte.toUnsignedInt(prgRom[0][bankAddress]);
-
+                    return readBank(programROM, SIZE_16KiB, 0, bankAddress);
+                    //return Byte.toUnsignedInt(prgRom[0][bankAddress]);
                 case 3:
                     //Bank is switched to the one selected by control register in this mode
-                    return Byte.toUnsignedInt(prgRom[getCurrentProgramBank()][bankAddress]);
+                    return readBank(programROM, SIZE_16KiB, getCurrentProgramBank(), bankAddress);
             }
 
 
@@ -141,14 +110,16 @@ public class MMC1 extends Mapper {
                     //Adding one since this is the second bank of the two 16kb chunks
                     byte bankSelect = (byte) ((getCurrentProgramBank() & 0b1110) + 1);
 
-                    return Byte.toUnsignedInt(prgRom[bankSelect][bankAddress]);
+                    return readBank(programROM, SIZE_16KiB, bankSelect, bankAddress);
+                    //return Byte.toUnsignedInt(prgRom[bankSelect][bankAddress]);
                 case 2:
                     //Bank is switched to the one selected by control register in this mode
-                    return Byte.toUnsignedInt(prgRom[getCurrentProgramBank()][bankAddress]);
-
+                    //return Byte.toUnsignedInt(prgRom[getCurrentProgramBank()][bankAddress]);
+                    return readBank(programROM, SIZE_16KiB, getCurrentProgramBank(), bankAddress);
                 case 3:
                     //This bank is fixed to the last bank in this mode
-                    return Byte.toUnsignedInt(prgRom[prgRom.length -1][bankAddress]);
+                    return readBank(programROM, SIZE_16KiB, prgBankCount - 1, bankAddress);
+                    //return Byte.toUnsignedInt(prgRom[prgRom.length -1][bankAddress]);
             }
 
         }
@@ -214,13 +185,7 @@ public class MMC1 extends Mapper {
     }
 
     private byte getCurrentProgramBank() {
-        return (byte) (programRomBank % prgRom.length);
-    }
-
-    private byte getCurrentCharacterBank(boolean secondBank) {
-       int bank = secondBank ? characterRomBank1 : characterRomBank0;
-
-       return (byte) (bank % chrRom.length);
+        return (byte) (programRomBank % prgBankCount);
     }
 
 
@@ -234,30 +199,15 @@ public class MMC1 extends Mapper {
         if(register == 0b00) {
             //Write to control register
 
-
             //First two bits are the mirroring mode
             byte mirror = (byte) (data & 0b11);
-            if(mirror != mirrorMode) {
-                mirrorMode = mirror;
-                MirrorMode newMode = null;
-                switch(mirror) {
-                    case 0b00:
-                        newMode = MirrorMode.ONE_SCREEN_FIRST;
-                        break;
-                    case 0b01:
-                        newMode = MirrorMode.ONE_SCREEN_SECOND;
-                        break;
-                    case 0b10:
-                        newMode = MirrorMode.VERTICAL;
-                        break;
-                    case 0b11:
-                        newMode = MirrorMode.HORIZONTAL;
-                }
-                mirrorModeEnum = newMode;
+            MirrorMode newMode = mirrorModesById[mirror % MirrorMode.values().length];
+
+            if(newMode != mirrorMode) {
                 System.out.println("> MMC1: Mirror mode changed to " + newMode);
             }
 
-
+            mirrorMode = newMode;
 
             data >>>= 2;
             //Bit 2-3 are the PRG ROM bank mode
@@ -285,76 +235,47 @@ public class MMC1 extends Mapper {
 
     }
 
-    /**
-     * Maps a PPU address to the bank and bank index
-     * @return An array of size two containing the bank and address into the bank
-     */
-    private int[] mapPPUAddress(int address) {
-        int bankAddress = address & 0xFFF;
-
-        //0 if first bank 1 if second bank (on ppu memory bus)
-        int bank = (address & 0x1FFF) <= 0xFFF ? 0 : 1;
-
-        if(!characterRom4kbMode) {
-            //8kb chr rom mode
-
-            int bankSelect = characterRomBank0;
-
-            //Bit 0 is ignored in 8kb mode, so mask it away
-            bankSelect &= 0b11110;
-
-            //Next bank if we're in the second bank
-            bankSelect += bank;
-
-            return new int[]{bankSelect, bankAddress};
-        }
-
-        //4kb character rom mode
-        if(bank == 0) {
-            //First 4kb bank
-            return new int[]{characterRomBank0, bankAddress};
-        } else {
-            //Second 4kb bank
-            return new int[]{characterRomBank1, bankAddress};
-        }
-
-    }
 
     @Override
     public int ppuRead(int address) {
         //CHR ROM starts at 0x0000, and is 8kb in size (0x0000 - 0x1FFF)
         //CHR ROM will be disabled when bit 13 of the address is set (CIRAM is enabled)
 
-        int[] location = mapPPUAddress(address);
+        if(!characterRom4kbMode) {
+            //Bit 0 is ignored in 8KB banking mode
+            int selectedBank = characterRomBank0 & ~1;
 
-        int bank = location[0] % chrRom.length;
-        int index = location[1] % chrRom[0].length;
+            return readBank(chrMem, SIZE_8KiB, selectedBank, address);
 
-        return chrRom[bank][index];
+        } else {
+            boolean secondBank = (address & 0x1FFF) > 0xFFF;
+
+            int selectedBank = secondBank ? characterRomBank1 : characterRomBank0;
+
+            return readBank(chrMem, SIZE_4KiB, selectedBank, address);
+        }
     }
 
     @Override
     public void ppuWrite(int address, int data) {
-        //System.out.printf("Trying to write to CHR ROM at %s...\n", Integer.toHexString(address));
         if(!usesChrRam) {
+            System.out.printf("Trying to write to CHR ROM at %s...\n", Integer.toHexString(address));
             return;
-            //TODO: I don't think this should ever work on MMC1?
-            // Update: Now I think it probably should!
         }
-        int[] location = mapPPUAddress(address);
 
-        int bank = location[0] % chrRom.length;
-        int index = location[1] % chrRom[0].length;
+        if(!characterRom4kbMode) {
+            //Bit 0 is ignored in 8KB banking mode
+            int selectedBank = characterRomBank0 & ~1;
 
+            writeBank(chrMem, SIZE_8KiB, selectedBank, address, data);
+        } else {
+            boolean secondBank = (address & 0x1FFF) > 0xFFF;
 
-        chrRom[bank][index] = (byte) data;
+            int selectedBank = secondBank ? characterRomBank1 : characterRomBank0;
+
+            writeBank(chrMem, SIZE_4KiB, selectedBank, address, data);
+        }
     }
-
-    @Override
-    public Mapper.MirrorMode getMirrorMode(int address) {
-        return mirrorModeEnum;
-    }
-
 
 
     @Override

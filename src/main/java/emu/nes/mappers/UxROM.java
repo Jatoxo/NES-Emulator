@@ -3,33 +3,12 @@ package emu.nes.mappers;
 public class UxROM extends Mapper {
     //https://www.nesdev.org/wiki/UxROM
 
-    private byte[] prgRom;
-    private byte[] chrRom;
-
-    private MirrorMode mirrorMode;
-    private int bankCount;
+    private final int bankCount;
 
     private int currentBank = 0;
 
-    // Index of first byte in last bank
-    private int lastBankIndex;
-
-    private boolean usesChrRam;
-
-
     public UxROM(byte[] prgRom, byte[] chrRom, MirrorMode mirrorMode) {
-        super(2);
-
-        this.prgRom = prgRom;
-
-        //If no CHR ROM is present, use 8kb CHR RAM
-        this.usesChrRam = chrRom == null;
-        if(usesChrRam) {
-            this.chrRom = new byte[8192];
-        } else {
-            this.chrRom = chrRom;
-        }
-
+        super(prgRom, chrRom, mirrorMode, 2);
 
         //16kb chunks
         this.bankCount = prgRom.length / Mapper.SIZE_16KiB;
@@ -44,7 +23,7 @@ public class UxROM extends Mapper {
         }
 
         int bank = address > 0xBFFF ? bankCount -1 : currentBank;
-        return readBank(prgRom, SIZE_16KiB, bank, address);
+        return readBank(programROM, SIZE_16KiB, bank, address);
     }
 
 
@@ -62,7 +41,7 @@ public class UxROM extends Mapper {
         //CHR ROM starts at 0x0000, and is 8kb in size (0x0000 - 0x1FFF)
         address &= 0x1FFF;
         //CHR ROM will be disabled when bit 13 of the address is set (CIRAM is enabled)
-        return chrRom[address] & 0xFF;
+        return chrMem[address] & 0xFF;
     }
 
     @Override
@@ -70,12 +49,7 @@ public class UxROM extends Mapper {
         //System.out.printf("NROM: Write to CHR ROM at %s...\n", Integer.toHexString(address));
         if(usesChrRam) {
             address &= 0x1FFF;
-            chrRom[address] = (byte) data;
+            chrMem[address] = (byte) data;
         }
-    }
-
-    @Override
-    public MirrorMode getMirrorMode(int address) {
-        return mirrorMode;
     }
 }

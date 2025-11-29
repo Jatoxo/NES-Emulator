@@ -1,29 +1,17 @@
 package emu.nes.mappers;
 
 public class AxROM extends Mapper {
-    //16kb or 32kb of PRG ROM
-    private final byte[] programRom;
-
-    //AxROM does not have CHR ROM, instead it has CHR RAM
-    private final byte[] chrRam = new byte[8192];
 
     private byte selectedBank = 0;
 
-    MirrorMode mirrorMode = MirrorMode.ONE_SCREEN_FIRST;
-
     public AxROM(byte[] programRom) {
-        super(AXROM);
-
-        this.programRom = programRom;
+        super(programRom, null, MirrorMode.ONE_SCREEN_FIRST, AXROM);
     }
 
     @Override
     public int cpuRead(int address) {
         if(address >= 0x8000 && address <= 0xFFFF) {
-            int bankAddress = address & 0x7FFF;
-            address = selectedBank << 15 | bankAddress;
-
-            return Byte.toUnsignedInt(programRom[address % programRom.length]);
+            return readBank(programROM, SIZE_32KiB, selectedBank, address);
         }
 
         return -1;
@@ -44,17 +32,11 @@ public class AxROM extends Mapper {
 
     @Override
     public int ppuRead(int address) {
-        return Byte.toUnsignedInt(chrRam[address]);
+        return Byte.toUnsignedInt(chrMem[address & (SIZE_8KiB - 1)]);
     }
 
     @Override
     public void ppuWrite(int address, int data) {
-        chrRam[address] = (byte) data;
+        chrMem[address & (SIZE_8KiB - 1)] = (byte) data;
     }
-
-    @Override
-    public MirrorMode getMirrorMode(int address) {
-        return mirrorMode;
-    }
-
 }

@@ -29,8 +29,7 @@ public class Cartridge extends BusDevice implements PPUBusDevice {
 	) {
 		//Cartridge space is 0x4020 - 0xFFFF on the CPU bus
 		super(0x4020, 0xFFFF);
-		//Todo: Maybe Catridge shouldn't be a bus device, rather just the individual memory chips / mappers?
-
+		//Todo: Maybe Cartridge shouldn't be a bus device, rather just the individual memory chips / mappers?
 		this.retainedStorage = retainedStorage;
 		this.mapper = mapper;
 		this.batteryBackedRam = batteryBackedRam;
@@ -47,8 +46,8 @@ public class Cartridge extends BusDevice implements PPUBusDevice {
 	}
 
 
-	public Mapper.MirrorMode getMirrorMode(int address) {
-		return mapper.getMirrorMode(address);
+	public Mapper.MirrorMode getMirrorMode() {
+		return mapper.getMirrorMode();
 	}
 
 	//whether the CIRAM is enabled when accessing this address

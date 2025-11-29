@@ -9,7 +9,7 @@ public class DummyCartridge extends Cartridge {
     }
 
     @Override
-    public Mapper.MirrorMode getMirrorMode(int address) {
+    public Mapper.MirrorMode getMirrorMode() {
         return Mapper.MirrorMode.ONE_SCREEN_FIRST;
     }
 

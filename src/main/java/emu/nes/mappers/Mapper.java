@@ -1,5 +1,7 @@
 package emu.nes.mappers;
 
+import emu.parsing.ROM;
+
 public abstract class Mapper {
 	public static final int NROM = 0;
 	public static final int MMC1 = 1;
@@ -15,8 +17,29 @@ public abstract class Mapper {
 
 	public final int mapperId;
 
-	public Mapper(int id) {
+    // Program and Character Memory
+    public byte[] programROM;
+    //Might be RAM
+    public byte[] chrMem;
+
+    public final boolean usesChrRam;
+
+    // Describes the standard configuration of the CIRAM A10 mapping
+    MirrorMode mirrorMode;
+
+	public Mapper(byte[] programROM, byte[] chrMem, MirrorMode initialMirrorMode, int id) {
 		mapperId = id;
+        this.programROM = programROM;
+        this.mirrorMode = initialMirrorMode;
+
+        if(chrMem == null) {
+            this.chrMem = new byte[SIZE_8KiB];
+            usesChrRam = true;
+        } else {
+            this.chrMem = chrMem;
+            usesChrRam = false;
+        }
+
 	}
 
 
@@ -35,7 +58,9 @@ public abstract class Mapper {
 	public abstract void ppuWrite(int address, int data);
 
 
-	public abstract MirrorMode getMirrorMode(int address);
+	public MirrorMode getMirrorMode() {
+        return mirrorMode;
+    }
 
 	//whether the CIRAM is enabled when accessing this address
 	public boolean isCIRAMEnabled(int address) {
@@ -64,12 +89,13 @@ public abstract class Mapper {
 	public void setProgramRAM(byte[] newProgramRam) {}
 
 
-
 	public static int readBank(byte[] rom, int bankSize, int bankIndex, int address) {
 		//Mask out bits for bank address
 		address &= bankSize-1;
 
-		int bankStart = (bankIndex) * bankSize;
+        int bankCount = rom.length / bankSize;
+		int bankStart = (bankIndex % bankCount) * bankSize;
+
 		return Byte.toUnsignedInt(rom[bankStart + address]);
 	}
 
