@@ -18,12 +18,7 @@ public class PPU extends BusDevice {
 	// ++-+++----- y-Position in Nametable
 
 
-
-
-
 	Nes nes;
-
-	public BufferedImage output;
 
 	//Screen buffer of palette ram index buffer, one byte corresponds to one pixel and represents an address into palette ram
 	byte[] indexBuffer = new byte[SCREEN_WIDTH * SCREEN_HEIGHT];
@@ -216,42 +211,14 @@ public class PPU extends BusDevice {
 
 		this.nes = nes;
 
-		output = new BufferedImage(SCREEN_WIDTH, SCREEN_HEIGHT, BufferedImage.TYPE_INT_RGB);
 		palette = Palette.defaultPalette();
 
 		palleteRam = new byte[1<<5]; //32 bytes
 		OAM = new byte[1<<8]; //256 bytes
 		secondaryOAM = new byte[1<<5]; //32 bytes
 
-
-
 		ciram = new CIRAM(nes);
 		ppuBus = new PPUBus(ciram);
-		//ppuBus.addBusDevice(ciram);
-
-		/*
-		ppuCtrl.addFlag("Nametable Select", "NN", 0x3); //(0 = $2000; 1 = $2400; 2 = $2800; 3 = $2C00)
-		ppuCtrl.addFlag("Increment", "I", 0x4);  //(0: add 1, going across; 1: add 32, going down)
-		ppuCtrl.addFlag("Sprite Pattern Table", "S", 0x8); //(0 = $0000; 1 = $1000)
-		ppuCtrl.addFlag("Background Pattern Table", "B", 0x10); //(0 = $0000; 1 = $1000)
-		ppuCtrl.addFlag("Sprite Size", "H", 0x20); //(0 = 8x8; 1 = 8x16)
-		ppuCtrl.addFlag("Master/Slave", "P", 0x40); //(0: read backdrop from EXT pins; 1: output color on EXT pins)
-		ppuCtrl.addFlag("Generate NMI", "V", 0x80); //Generate an NMI at the start of the vertical blanking interval (0: off; 1: on)
-
-		ppuMask.addFlag("Grayscale", "G", 0x1); //(0: normal color; 1: produce a monochrome display)
-		ppuMask.addFlag("Show background Left", "m", 0x2); //Show Background in leftmost 8 pixels of screen (0: hide; 1: show)
-		ppuMask.addFlag("Show sprites Left", "M", 0x4); //Show Sprites in leftmost 8 pixels of screen (0: hide; 1: show)
-		ppuMask.addFlag("Show background", "b", 0x8); //Show background
-		ppuMask.addFlag("Show sprites", "s", 0x10); //Show sprites
-		ppuMask.addFlag("Emphasize red", "R", 0x20); //Emphasize red (green on PAL/Dendy)
-		ppuMask.addFlag("Emphasize green", "G", 0x40); //Emphasize green (red on Pal/Dendy)
-		ppuMask.addFlag("Emphasize blue", "B", 0x80); //Emphasize blue
-
-		ppuStatus.addFlag("Sprite Overflow", "O", 0x20);
-		ppuStatus.addFlag("Sprite 0 Hit", "S", 0x40); //Sprite 0 Hit.  Set when a nonzero pixel of sprite 0 overlaps a nonzero background pixel; cleared at dot 1 of the pre-render line.  Used for raster timing.
-		ppuStatus.addFlag("Vertical Blank", "V", 0x80); //Vertical blank has started (0: not in vblank; 1: in vblank).
-		*/
-
 	}
 
 
@@ -401,7 +368,6 @@ public class PPU extends BusDevice {
 			}
 
 			 */
-
 		}
 
 
@@ -546,7 +512,6 @@ public class PPU extends BusDevice {
 		//-The sprite flipping (byte two in OAM entry, Bit 6-7)
 		//-Sprite Size 8x16 bit mode set in PPUCTRL
 
-
 		//Todo: ignoring sprite priority for now and just plonking them on the screen
 		//Todo: Also ignoring 8x16 sprites fuck those
 		//loop over secondaryOAM in reverse order (OAM now because im rendering all sprites at once and the evaluation is for every scanline)
@@ -614,6 +579,7 @@ public class PPU extends BusDevice {
 
 		}
 	}
+
 
 	/**
 	 * Fills the outputBuffer with the RGB values obtained by looking up the color data described in the index buffer
@@ -881,14 +847,14 @@ public class PPU extends BusDevice {
 					//Any value 0bXX00 mirrors the universal background color at 0b0000
 					paletteIndex = ((paletteIndex & 0x3) == 0) ? 0 : paletteIndex;
 
-					int colorByte = palleteRam[paletteIndex];
-					int rgbOut = palette.colors[colorByte].getRGB();
+					//int colorByte = palleteRam[paletteIndex];
+					//int rgbOut = palette.colors[colorByte].getRGB();
 
 					int x = (nameT&0x1F) * 8 + pixel;
 					int y = ((nameT&0x3E0) >> 5) * 8 + row;
 
+                    indexBuffer[(y * 256) + x] = (byte) paletteIndex;
 
-					output.setRGB(x, y, rgbOut);
 
 				}
 
