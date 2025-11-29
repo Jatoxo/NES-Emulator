@@ -1,10 +1,43 @@
 package nes;
 
 import emu.nes.BusDevice;
+import emu.nes.BusValue;
 import emu.nes.Nes;
+import emu.nes.Palette;
+import emu.nes.ppu.CIRAM;
+import emu.nes.ppu.PPUBus;
 
 public class PPU2 extends BusDevice {
+    public static final int PALETTE_RAM_INDEX_START = 0x3F00; //Inclusive
+
     private final Nes nes;
+
+    // Rendering shift registers store tile and attribute data
+
+    // 2 16-Bit registers contain pattern data for the background
+    //                                    [BBBBBBBB] - Next tile's pattern data,
+    //                                    [BBBBBBBB] - 2 bits per pixel
+    //                                     ||||||||<----[Transfers every inc hori(v)]
+    //                                     vvvvvvvv
+    // Serial-to-parallel - [AAAAAAAA] <- [BBBBBBBB] <- [1...] - Parallel-to-serial  (low plane)
+    //    shift registers - [AAAAAAAA] <- [BBBBBBBB] <- [0...] - shift registers     (high plane)
+    int patternRegisterLow;
+    int patternRegisterHigh;
+
+
+    // 8-Bit attribute register
+    int attributeRegisterLow;
+    int attributeRegisterHigh;
+    // Serial-to-parallel - [PPPPPPPP] <- [P] - 1-bit latch
+    //    shift registers - [PPPPPPPP] <- [P] - 1-bit latch
+    //                                     ^
+    //                                     |<--------[Transfers every inc hori(v)]
+    //                                [  Mux   ]<----[coarse_x bit 1 and coarse_y bit 1 select 2 bits]
+    //                                 ||||||||
+    //                                 ^^^^^^^^
+    //                                [PPPPPPPP] - Next tile's attributes data
+
+
 
 
     // The two rendering registers known as the "loopy registers"
@@ -49,7 +82,11 @@ public class PPU2 extends BusDevice {
 
     private int oamAddress;
 
+
+    private byte[] palleteRam;
     private byte[] oam;
+    private byte[] secondaryOAM;
+
 
     //Lowest 3 bits of the x scroll position
     private int fineX;
@@ -58,6 +95,7 @@ public class PPU2 extends BusDevice {
     private byte readBuffer;
 
     private PPUBus ppuBus;
+    public Palette palette;
 
 
     //Register (base) addresses
@@ -81,9 +119,30 @@ public class PPU2 extends BusDevice {
         this.nes = nes;
 
         this.ppuBus = new PPUBus(new CIRAM(nes));
+        this.palette = Palette.defaultPalette();
 
         reset(true);
     }
+
+    // Gets the 4-Bit Index into palette RAM currently
+    // selected by the rendering shift registers and scroll position
+    private int getCurrentBackgroundPixel() {
+        int pixel = 0;
+
+        pixel |= patternRegisterHigh     >> (7 - fineX);
+        pixel |= ((patternRegisterLow    >> (7 - fineX)) & 1) << 1;
+
+        pixel |= ((attributeRegisterLow  >> (7 - fineX)) & 1) << 2;
+        pixel |= ((attributeRegisterHigh >> (7 - fineX)) & 1) << 3;
+
+        return pixel;
+    }
+
+    public void clock() {
+
+    }
+
+
 
     /**
      * Reset the PPU
@@ -113,26 +172,66 @@ public class PPU2 extends BusDevice {
         //Todo: make this more random? It should be "Unspecified"
         oam = new byte[64];
         vRegister = hard ? 0 : vRegister; //Unspecified if off
+
+        //TODO: Determine startup values
+        secondaryOAM = new byte[32];
+        palleteRam = new byte[32];
     }
 
 
 
 
 
-
-
-    @Override
-    public void tick() {
-
-    }
 
 
     public int ppuRead(int address) {
-        return 0;
+        address &= 0x3FFF;
+
+        //Palette RAM does not use the bus
+        if(address >= PALETTE_RAM_INDEX_START) {
+            return Byte.toUnsignedInt(paletteRead(address));
+        }
+
+        return ppuBus.read(address);
     }
 
-    public void ppuWrite(int address, int data) {
 
+    public void ppuWrite(int address, int data) {
+        address &= 0x3FFF;
+        data &= 0xFF;
+
+        //Palette RAM does not use the bus
+        if(address >= PALETTE_RAM_INDEX_START) {
+            paletteWrite(address, (byte) data);
+            return;
+        }
+
+        ppuBus.write(address, data);
+    }
+
+
+    public byte paletteRead(int address) {
+        //Mask out 5 bits for mirroring
+        address &= 0x1F;
+
+        //When two last bits are 0, disable bit A4 (To force Background Palette) since these are mirrors of those locations
+        if((address & 0x3) == 0) {
+            address &= 0xF;
+        }
+
+        //Todo: Upper two bits should be open bus
+        return (byte) (palleteRam[address] & 0b0011_1111);
+    }
+
+    public void paletteWrite(int address, byte data) {
+        address &= 0x1F;
+        data &= 0b0011_1111; //Values are 6-Bit only
+
+        //When two last bits are 0, disable bit A4 (To force Background Palette) since these are mirrors of those locations
+        if((address & 0x3) == 0) {
+            address &= 0xF;
+        }
+        palleteRam[address] = data;
     }
 
 
