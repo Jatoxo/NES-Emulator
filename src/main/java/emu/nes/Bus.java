@@ -62,6 +62,7 @@ public class Bus {
 
 			// This address specifically isn't supposed to update the bus, as it's cpu internal
 			// but bit 5 is still open bus
+            //Todo: Make this optional somehow (e.g. it breaks tests)
 			if(addr == 0x4015) {
 				value &= 0b1101_1111;
 				value |= openBus & 0b0010_0000;

@@ -1037,7 +1037,12 @@ public class Jtx6502 {
 		if(addr == 0x4014) {
 			//Odd cpu cycle results in extra idle cycle
 			//https://www.nesdev.org/wiki/PPU_OAM#:~:text=(%2B1%20on%20odd%20CPU%20cycles)
-			cycles += nes.clock.isPut ? 2 : 1;
+			if(nes != null) {
+                cycles += nes.clock.isPut ? 2 : 1;
+            } else {
+                cycles += (totalCycles & 1) == 0 ? 2 : 1;
+            }
+
 
 			for(int i = 0; i < 256; i++) {
 				int readAddr = (data << 8) | i;

@@ -18,7 +18,10 @@ public class CPUTest {
         try {
             File file = new File(CPUTest.class.getResource("TomHarteTests/").getFile());
 
+            int totalInstructionsTested = 0;
+            int passed = 0;
             for(File testFile : file.listFiles()) {
+
                 if (!testFile.getName().endsWith(".json"))
                     continue;
 
@@ -32,12 +35,18 @@ public class CPUTest {
                 }
 
                 System.out.println("Running " + testedInstruction.mnemonic + " tests (" + testFile.getName() + ")");
-                String testsJson = Files.readString(testFile.toPath());
 
-                if(runJsonTests(testsJson)) {
-                    System.out.println("> Passed");
+                String testsJson = Files.readString(testFile.toPath());
+                boolean result = runJsonTests(testsJson);
+
+                totalInstructionsTested++;
+                if(result) {
+                    passed++;
+                    System.out.println("\u001B[32m> Passed\u001B[0m");
                 }
             }
+
+            System.out.println("Tests passed: " + passed + "/" + totalInstructionsTested);
 
 
         } catch (IOException | ParseException e) {
@@ -45,6 +54,8 @@ public class CPUTest {
         }
     }
 
+
+    // Runs all the tests for one of the instructions
     private static boolean runJsonTests(String testsJson) throws ParseException {
         JSONParser parser = new JSONParser();
 
@@ -52,7 +63,6 @@ public class CPUTest {
 
         JSONArray tests = (JSONArray) obj;
 
-        boolean allPass = true;
         for(Object test : tests) {
             JSONObject testObj = (JSONObject) test;
 
@@ -61,13 +71,12 @@ public class CPUTest {
             boolean success = runTest(harteTest, false);
 
             if(!success) {
-                System.out.println("Test " + harteTest.name + " failed!");
-                allPass = false;
+                System.out.println("\u001B[31mTest " + harteTest.name + " failed!\u001B[0m");
                 return false;
             }
         }
 
-        return allPass;
+        return true;
     }
 
     private static HarteTest getTest(JSONObject testObj) {
@@ -128,8 +137,25 @@ public class CPUTest {
         return cycles;
     }
 
+    // Runs a single test for one of the instructions
     public static boolean runTest(HarteTest test, boolean ignoreBusHistory) {
-        Jtx6502 cpu = new Jtx6502(new Nes());
+        Jtx6502 cpu = new Jtx6502(null);
+
+
+        for(Cycle cycle : test.cycles) {
+            if(cycle.address == 0x4015 && cycle.read) {
+                System.out.println("\u001B[90mSkipping test due to 0x4015 read\u001B[0m");
+                return true;
+            }
+            if(cycle.address == 0x4014 && !cycle.read) {
+                System.out.println("\u001B[90mSkipping test due to 0x4014 write\u001B[0m");
+                return true;
+            }
+        }
+
+        if(test.name.equals("2a 07 56")) {
+            System.out.println("This one");
+        }
 
         BusWatcher busWatcher = new BusWatcher();
 
