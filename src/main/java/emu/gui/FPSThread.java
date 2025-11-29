@@ -6,10 +6,13 @@ import java.util.concurrent.Semaphore;
 public class FPSThread extends Thread {
     final LinkedList<Integer> fpsBuffer = new LinkedList<>();
 
+
+
     private GUI gui;
     private final int updateIntervalMs;
 
     private long lastUpdated = 0;
+    private long lastFrameTimeNs = 0;
     private final Semaphore semaphore = new Semaphore(0);
 
     public FPSThread(GUI gui, int updateIntervalMs) {
@@ -17,7 +20,20 @@ public class FPSThread extends Thread {
         this.updateIntervalMs = updateIntervalMs;
     }
 
-    public void addFPSValue(int fps) {
+    public void frameCompleted() {
+        long elapsed = System.nanoTime() - lastFrameTimeNs;
+        elapsed = Math.round(elapsed / 1000000.0);
+
+        if(elapsed != 0) {
+            int fps = (int) Math.round(1000.0 / elapsed);
+            addFPSValue(fps);
+        }
+
+        lastFrameTimeNs = System.nanoTime();
+    }
+
+
+    private void addFPSValue(int fps) {
         synchronized(fpsBuffer) {
             fpsBuffer.add(fps);
         }

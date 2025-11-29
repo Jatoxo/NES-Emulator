@@ -9,11 +9,8 @@ import emu.parsing.RomParser;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.Transferable;
 import java.awt.dnd.*;
 import java.awt.event.*;
-import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -24,9 +21,8 @@ public class GUI extends JFrame implements EmulationListener {
 
 	private final NesPanel nesScreen;
 	private final FPSThread fpsThread;
-	private long lastFrame = 0;
 
-	private PatternViewWindow patternViewWindow;
+	private final PatternViewWindow patternViewWindow;
 
 	public final Nes nes;
 
@@ -137,9 +133,7 @@ public class GUI extends JFrame implements EmulationListener {
 	}
 
 	private void setupFrame() {
-
         setFocusTraversalKeysEnabled(false);
-
 
         try {
             Image appIcon = ImageIO.read(Objects.requireNonNull(getClass().getResource("/Nes_controller_square.png")));
@@ -169,39 +163,7 @@ public class GUI extends JFrame implements EmulationListener {
             }
         });
 
-        new DropTarget(this, new DropTargetAdapter() {
-            @Override
-            public void dragOver(DropTargetDragEvent event) {
-                event.acceptDrag(DnDConstants.ACTION_LINK);
-            }
-
-            @Override
-            public void drop(DropTargetDropEvent event) {
-                event.acceptDrop(DnDConstants.ACTION_LINK);
-
-                // Get the transfer which can provide the dropped item data
-                Transferable transferable = event.getTransferable();
-
-                try {
-                    // If the drop items are files
-                    if (event.getCurrentDataFlavors()[0].isFlavorJavaFileListType()) {
-                        // Get all the dropped files
-                        java.util.List<File> droppedFiles = (java.util.List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
-                        // If there are multiple, load only one
-                        File file = droppedFiles.get(0);
-                        nes.insertCartridge(RomParser.parseRom(file.getPath()));
-                    }
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-                // Inform that the drop is complete
-                event.dropComplete(true);
-            }
-        });
-
-
+        new DropTarget(this, new EmulatorDropTarget(nes));
     }
 
 
@@ -213,15 +175,7 @@ public class GUI extends JFrame implements EmulationListener {
             patternViewWindow.update();
         }
 
-        long elapsed = System.nanoTime() - lastFrame;
-        elapsed = Math.round(elapsed / 1000000.0);
-
-        if(elapsed != 0) {
-            int fps = (int) Math.round(1000.0 / elapsed);
-            fpsThread.addFPSValue(fps);
-        }
-
-        lastFrame = System.nanoTime();
+        fpsThread.frameCompleted();
     }
 }
 
