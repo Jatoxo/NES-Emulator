@@ -76,3 +76,5 @@ fabric.properties
 /shelf/
 /workspace.xml
 /src/test/res/TomHarteTests/
+.idea/misc.xml
+.idea/copilot.data.migration.agent.xml
