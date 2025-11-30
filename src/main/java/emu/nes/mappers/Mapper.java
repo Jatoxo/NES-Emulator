@@ -1,15 +1,19 @@
 package emu.nes.mappers;
 
+import emu.nes.Nes;
 import emu.parsing.ROM;
 
 public abstract class Mapper {
 	public static final int NROM = 0;
 	public static final int MMC1 = 1;
 	public static final int UXROM = 2;
-	public static final int CNROM = 3;
+    public static final int CNROM = 3;
+    public static final int MMC3 = 4;
 	public static final int AXROM = 7;
 
-	public static final int SIZE_4KiB  = 1 << 12;
+    public static final int SIZE_1KiB  = 1 << 10;
+    public static final int SIZE_2KiB  = 1 << 11;
+    public static final int SIZE_4KiB  = 1 << 12;
 	public static final int SIZE_8KiB  = 1 << 13;
 	public static final int SIZE_16KiB = 1 << 14;
 	public static final int SIZE_32KiB = 1 << 15;
@@ -23,6 +27,8 @@ public abstract class Mapper {
     public byte[] chrMem;
 
     public final boolean usesChrRam;
+
+    Nes nes;
 
     // Describes the standard configuration of the CIRAM A10 mapping
     MirrorMode mirrorMode;
@@ -93,8 +99,9 @@ public abstract class Mapper {
 		//Mask out bits for bank address
 		address &= bankSize-1;
 
+        //Todo: Avoid calculating this every time
         int bankCount = rom.length / bankSize;
-		int bankStart = (bankIndex % bankCount) * bankSize;
+		int bankStart = (bankIndex & (bankCount - 1)) * bankSize;
 
 		return Byte.toUnsignedInt(rom[bankStart + address]);
 	}
@@ -103,7 +110,17 @@ public abstract class Mapper {
 		//Mask out bits for bank address
 		address &= bankSize-1;
 
-		int bankStart = (bankIndex) * bankSize;
+        int bankCount = rom.length / bankSize;
+        int bankStart = (bankIndex & (bankCount - 1)) * bankSize;
+
+
 		rom[bankStart + address] = (byte) value;
 	}
+
+    public void scanlineTick() {};
+
+
+    public void nesConnected(Nes nes) {
+        this.nes = nes;
+    }
 }

@@ -924,7 +924,7 @@ public class Jtx6502 {
 		//Not necessary anymore since the check needs to be in clockcycle too
 		//(Redo IRQ stuff pls=
 		if(getFlag(I) == 0) {
-			System.out.println("--------------   IRQ      ----------------------");
+			//System.out.println("--------------   IRQ      ----------------------");
 
 			//Push PC to stack
 			pushWord(pc.get());

@@ -11,7 +11,7 @@ public class Cartridge extends BusDevice implements PPUBusDevice {
 	RetainedStorage retainedStorage;
 
 	//Mapper used by this cartridge
-	private final Mapper mapper;
+	public final Mapper mapper;
 
 	//Whether the cartridge contains battery-backed PRG RAM ($6000-7FFF) or other persistent memory
 	private final boolean batteryBackedRam;
@@ -37,6 +37,12 @@ public class Cartridge extends BusDevice implements PPUBusDevice {
 		loadPersistentData();
 	}
 
+    public void nesConnected(Nes nes) {
+        if(mapper != null) {
+            mapper.nesConnected(nes);
+        }
+
+    }
 
 	/**
 	 * Returns whether the cartridge has battery-backed PRG RAM ($6000-7FFF) or other persistent memory

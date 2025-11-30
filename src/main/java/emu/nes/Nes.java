@@ -105,6 +105,7 @@ public class Nes {
 
 			ppu.connectCartridge(cartridge);
 
+            cartridge.nesConnected(this);
 			reset();
 		}
 	}

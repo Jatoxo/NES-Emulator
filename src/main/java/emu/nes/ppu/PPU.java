@@ -279,6 +279,12 @@ public class PPU extends BusDevice {
 	//Called for every cycle on the pre-render scanline
 	//Scanline -1
 	private void preRenderScanlineCycle(int scanlineCycle) {
+        if(scanlineCycle == 260 && ppuCtrl.isSet(CTRL_S) && !ppuCtrl.isSet(CTRL_B)) {
+            nes.cartridge.mapper.scanlineTick();
+        } else if(scanlineCycle == 324 && ppuCtrl.isSet(CTRL_S) && !ppuCtrl.isSet(CTRL_B)) {
+            nes.cartridge.mapper.scanlineTick();
+        }
+
 		//https://www.nesdev.org/wiki/PPU_registers#:~:text=OAMADDR%20is%20set%20to%200%20during%20each%20of%20ticks%20257%2D320
 		if(scanlineCycle == 1) {
 			//Clear sprite 0 hit flag
@@ -341,6 +347,16 @@ public class PPU extends BusDevice {
 	//Called for every cycle on the visible scanline
 	//Scanline 0 - 239
 	private void visibleScanlineCycle(int scanline, int scanlineCycle) {
+        //When using 8x8 sprites, if the BG uses $0000, and the sprites use $1000, the IRQ counter should decrement on PPU cycle 260, right after the visible part of the target scanline has ended.
+        //When using 8x8 sprites, if the BG uses $1000, and the sprites use $0000, the IRQ counter should decrement on PPU cycle 324 of the previous scanline (as in, right before the target scanline
+        //Todo: 8x16 sprites require A12 tracking
+
+        if(scanlineCycle == 260 && ppuCtrl.isSet(CTRL_S) && !ppuCtrl.isSet(CTRL_B)) {
+            nes.cartridge.mapper.scanlineTick();
+        } else if(scanlineCycle == 324 && ppuCtrl.isSet(CTRL_S) && !ppuCtrl.isSet(CTRL_B)) {
+            nes.cartridge.mapper.scanlineTick();
+        }
+
 		//TODO: hack: this is reloading at the end of every scanline so with the current method only the last change will take effect
 		if(scanline == sprite0HitScanline && scanlineCycle == sprite0HitScanlineCycle) {
 			//System.out.println("Scanline:" + sprite0HitScanline);
@@ -353,7 +369,7 @@ public class PPU extends BusDevice {
 			frameComplete = false;
 
             //Todo: IDK if this is needed (pls don't fix just make new ppu)
-			//renderBackground2();
+			renderBackground2();
 			renderSprites();
 
 		} else if(scanlineCycle == 304) {

@@ -72,6 +72,7 @@ public abstract class ROM {
             case Mapper.AXROM -> new AxROM(getProgramRom());
             case Mapper.UXROM -> new UxROM(getProgramRom(), getCharacterRom(), mapperMirrorMode);
             case Mapper.CNROM -> new CNROM(getProgramRom(), getCharacterRom(), mapperMirrorMode);
+            case Mapper.MMC3 ->  new MMC3(getProgramRom(), getCharacterRom());
             default -> throw new UnsupportedRomException("Mapper " + mapperId + " is not supported");
         };
 
