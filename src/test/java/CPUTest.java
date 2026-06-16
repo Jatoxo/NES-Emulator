@@ -47,9 +47,14 @@ public class CPUTest {
             }
 
             System.out.println("Tests passed: " + passed + "/" + totalInstructionsTested);
+            
+            if(passed != totalInstructionsTested) {
+                System.exit(1);
+            }
 
 
         } catch (IOException | ParseException e) {
+            System.exit(1);
             throw new RuntimeException(e);
         }
     }

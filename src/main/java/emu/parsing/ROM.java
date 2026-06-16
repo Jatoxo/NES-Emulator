@@ -67,12 +67,12 @@ public abstract class ROM {
         }
 
         Mapper mapper = switch (mapperId) {
-            case Mapper.NROM -> new NROM(getProgramRom(), getCharacterRom(), mapperMirrorMode);
-            case Mapper.MMC1 -> new MMC1(getProgramRom(), getCharacterRom());
+            case Mapper.NROM  -> new NROM(getProgramRom(), getCharacterRom(), mapperMirrorMode);
+            case Mapper.MMC1  -> new MMC1(getProgramRom(), getCharacterRom());
             case Mapper.AXROM -> new AxROM(getProgramRom());
             case Mapper.UXROM -> new UxROM(getProgramRom(), getCharacterRom(), mapperMirrorMode);
             case Mapper.CNROM -> new CNROM(getProgramRom(), getCharacterRom(), mapperMirrorMode);
-            case Mapper.MMC3 ->  new MMC3(getProgramRom(), getCharacterRom());
+            case Mapper.MMC3  -> new MMC3(getProgramRom(), getCharacterRom());
             default -> throw new UnsupportedRomException("Mapper " + mapperId + " is not supported");
         };
 

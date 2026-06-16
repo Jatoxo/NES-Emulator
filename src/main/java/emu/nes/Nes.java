@@ -8,8 +8,6 @@ import emu.nes.input.StandardController;
 import emu.nes.apu.APU;
 import emu.nes.ppu.PPU;
 
-import static java.lang.Thread.sleep;
-
 
 public class Nes {
 	public boolean paused = false;

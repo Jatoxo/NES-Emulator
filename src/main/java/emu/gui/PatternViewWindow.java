@@ -7,16 +7,13 @@ import java.awt.*;
 
 public class PatternViewWindow extends JFrame {
 
-    private Nes nes;
-
-    private PatternPanel leftPatternPanel;
-    private PatternPanel rightPatternPanel;
+    private final PatternPanel leftPatternPanel;
+    private final PatternPanel rightPatternPanel;
 
     public PatternViewWindow(Nes nes) {
         super("Pattern Tables");
 
         setSize(new Dimension(800, 400));
-        this.nes = nes;
 
         leftPatternPanel = new PatternPanel(nes, true);
         rightPatternPanel = new PatternPanel(nes, false);

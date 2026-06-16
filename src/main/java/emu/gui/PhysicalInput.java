@@ -7,7 +7,7 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
 public class PhysicalInput extends KeyAdapter {
-    private Nes nes;
+    private final Nes nes;
 
     public PhysicalInput(Nes nes) {
         this.nes = nes;
@@ -15,71 +15,46 @@ public class PhysicalInput extends KeyAdapter {
 
     @Override
     public void keyPressed(KeyEvent e) {
-        StandardController controller = (StandardController) nes.controllerPorts.player1;
-        switch(e.getKeyCode()) {
-            case KeyEvent.VK_TAB:
-                nes.limitSpeed = false;
-                break;
-            case KeyEvent.VK_W:
-                controller.dpadUp = true;
-                break;
-            case KeyEvent.VK_A:
-                controller.dpadLeft = true;
-                break;
-            case KeyEvent.VK_S:
-                controller.dpadDown = true;
-                break;
-            case KeyEvent.VK_D:
-                controller.dpadRight = true;
-                break;
-            case KeyEvent.VK_SPACE:
-                controller.buttonA = true;
-                break;
-            case KeyEvent.VK_SHIFT:
-                controller.buttonB = true;
-                break;
-            case KeyEvent.VK_MINUS:
-                controller.buttonSelect = true;
-                break;
-            case KeyEvent.VK_ENTER:
-                controller.buttonStart = true;
-                break;
-        }
+        handleKey(e.getKeyCode(), true);
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
+        handleKey(e.getKeyCode(), false);
+    }
+
+    private void handleKey(int keyCode, boolean pressed) {
         StandardController controller = (StandardController) nes.controllerPorts.player1;
-        switch(e.getKeyCode()) {
+
+        switch(keyCode) {
             case KeyEvent.VK_TAB:
-                nes.limitSpeed = true;
+                nes.limitSpeed = !pressed;
                 break;
             case KeyEvent.VK_W:
-                controller.dpadUp = false;
+                controller.dpadUp = pressed;
                 break;
             case KeyEvent.VK_A:
-                controller.dpadLeft = false;
+                controller.dpadLeft = pressed;
                 break;
             case KeyEvent.VK_S:
-                controller.dpadDown = false;
+                controller.dpadDown = pressed;
                 break;
             case KeyEvent.VK_D:
-                controller.dpadRight = false;
+                controller.dpadRight = pressed;
                 break;
             case KeyEvent.VK_SPACE:
-                controller.buttonA = false;
+                controller.buttonA = pressed;
                 break;
             case KeyEvent.VK_SHIFT:
-                controller.buttonB = false;
+                controller.buttonB = pressed;
                 break;
             case KeyEvent.VK_MINUS:
-                controller.buttonSelect = false;
+                controller.buttonSelect = pressed;
                 break;
             case KeyEvent.VK_ENTER:
-                controller.buttonStart = false;
+                controller.buttonStart = pressed;
                 break;
         }
     }
-
 
 }

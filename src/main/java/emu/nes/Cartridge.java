@@ -113,8 +113,6 @@ public class Cartridge extends BusDevice implements PPUBusDevice {
 		byte[] programRam = mapper.getProgramRAM();
 
         retainedStorage.persist(programRam);
-
-
 	}
 
 	public void loadPersistentData() {

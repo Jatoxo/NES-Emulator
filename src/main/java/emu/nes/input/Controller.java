@@ -1,9 +1,6 @@
 package emu.nes.input;
 
 public interface Controller {
-
-
-
 	//read request from the console to get the next bit for input data lines D4 D3 D2 D1 D0
 	int read();
 
