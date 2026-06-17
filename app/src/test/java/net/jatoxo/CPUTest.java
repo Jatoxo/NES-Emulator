@@ -6,81 +6,23 @@ import com.google.gson.annotations.SerializedName;
 import net.jatoxo.emu.nes.Instruction;
 import net.jatoxo.emu.nes.Jtx6502;
 import net.jatoxo.json.CycleTypeAdapter;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 
 import java.io.*;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class CPUTest {
-
-    static void main() {
-        CPUTest test = new CPUTest();
-
-        test.runCpuTests();
-    }
-
-
-    void runCpuTests() {
-
-        try {
-
-            File file = new File(CPUTest.class.getResource("/TomHarteTests/").getFile());
-
-            int totalInstructionsTested = 0;
-            int passed = 0;
-            for(File testFile : file.listFiles()) {
-
-                if (!testFile.getName().endsWith(".json"))
-                    continue;
-
-                String hexop = testFile.getName().substring(0, testFile.getName().length() - 5);
-
-                int opcode = Integer.parseInt(hexop, 16);
-
-                Instruction testedInstruction = Instruction.fromOpCode(opcode);
-                if(testedInstruction.mnemonic.equals("???")) {
-
-                    System.out.println("WWWEEE WOOO");
-                    continue;
-                }
-
-                System.out.println("Running " + testedInstruction.mnemonic + " tests (" + testFile.getName() + ")");
-
-                String testsJson = Files.readString(testFile.toPath());
-                boolean result = runJsonTests(testsJson);
-
-                totalInstructionsTested++;
-                if(result) {
-                    passed++;
-                    System.out.println("\u001B[32m> Passed\u001B[0m");
-                }
-            }
-
-            System.out.println("Tests passed: " + passed + "/" + totalInstructionsTested);
-            
-            if(passed != totalInstructionsTested) {
-                System.exit(1);
-            }
-
-
-        } catch (IOException e) {
-            System.exit(1);
-            throw new RuntimeException(e);
-        }
-    }
-
     private static Stream<Arguments> provideHarteTests() {
         File testFolder = new File(CPUTest.class.getResource("/TomHarteTests/").getFile());
         File[] files = testFolder.listFiles();
@@ -88,17 +30,20 @@ public class CPUTest {
         if (files == null) return Stream.empty();
 
         return Arrays.stream(files)
-                .map(Arguments::of);
+                .filter((f) -> f.getName().endsWith(".json"))
+                .map((f) -> {
+                    // Infer the opcode from the file name...
+                    String hexop = f.getName().substring(0, f.getName().length() - 5);
+                    int opcode = Integer.parseInt(hexop, 16);
+                    Instruction testedInstruction = Instruction.fromOpCode(opcode);
+                    // ...so we can use it for the test name
+                    return Arguments.of(testedInstruction.toString(), f);
+                });
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @MethodSource("provideHarteTests")
-    public void testHarteTestFile(File testFile) throws IOException {
-        if (!testFile.getName().endsWith(".json")) {
-            System.out.println("Not a valid test file: " + testFile.getName());
-            return;
-        }
-
+    public void testHarteTestFile(String name, File testFile) throws IOException {
         String hexop = testFile.getName().substring(0, testFile.getName().length() - 5);
         int opcode = Integer.parseInt(hexop, 16);
 
@@ -117,7 +62,7 @@ public class CPUTest {
 
 
     // Runs all the tests for one of the instructions
-    private static boolean runJsonTests(String testsJson) {
+    private static void runJsonTests(String testsJson) {
         Gson gson = new GsonBuilder().registerTypeAdapter(
                 Cycle.class, new CycleTypeAdapter()
         ).create();
@@ -129,11 +74,11 @@ public class CPUTest {
 
             if(!success) {
                 System.out.println("\u001B[31mTest " + test.name + " failed!\u001B[0m");
-                return false;
+                return;
             }
         }
 
-        return true;
+        System.out.println("\u001B[32m> Passed\u001B[0m");
     }
 
 
@@ -177,17 +122,19 @@ public class CPUTest {
             cycles++;
         } while(cpu.cycles != 0);
 
+        List<String> failures = new ArrayList<>();
+
 
         //Compare the state to the final state specified by the test
-        boolean success = compareState(cpu, test.finalState);
-        //assertTrue(success, "CPU State does not match");
+        if(!compareState(cpu, test.finalState)) {
+            failures.add("CPU State does not match");
+            System.out.println("CPU State does not match");
+        }
 
         //Compare the cycles to the cycles specified by the test
         if(cycles != test.cycles.size()) {
-            System.out.println("Cycle count does not match! Expected " + test.cycles.size() + " but got " + cycles);
-            success = false;
+            failures.add("Cycle count does not match! Expected " + test.cycles.size() + " but got " + cycles);
         }
-        //assertTrue(success, "Cycle count does not match");
 
         //Compare the RAM to the RAM specified by the test
         for(int[] memoryAllocation : test.finalState.memory) {
@@ -195,17 +142,16 @@ public class CPUTest {
             byte expectedValue = (byte) memoryAllocation[1];
 
             if(actualValue != expectedValue) {
-                System.out.println("RAM does not match! Expected " + expectedValue + " but got " + actualValue);
-                success = false;
+                failures.add("RAM does not match! Expected " + expectedValue + " but got " + actualValue);
             }
         }
         //assertTrue(success, "RAM does not match");
 
-
         //If we are ignoring the bus history, we can't compare the cycles
-        if(ignoreBusHistory)
-            return success;
-
+        if(ignoreBusHistory) {
+            assertTrue(failures.isEmpty(), String.join("\n", failures));
+            return failures.isEmpty();
+        }
 
 
         boolean cyclesMatch = true;
@@ -214,41 +160,32 @@ public class CPUTest {
             Cycle actualCycle = busWatcher.cycleHistory.get(i);
             Cycle expectedCycle = test.cycles.get(i);
 
-            if(actualCycle.address != expectedCycle.address) {
-                cyclesMatch = false;
-            }
-            if(actualCycle.value != expectedCycle.value) {
-                cyclesMatch = false;
-            }
-            if(actualCycle.read != expectedCycle.read) {
-                cyclesMatch = false;
-            }
+            if(!actualCycle.equals(expectedCycle)) {
+                failures.add("Cycles do not match");
 
-            if(cyclesMatch)
-                continue;
+                System.out.println("Cycles do not match!");
+                //Print expected cycles
+                System.out.println("Expected cycles:");
+                System.out.println("------------------");
+                for (Cycle cycle : test.cycles) {
+                    System.out.println(cycle);
+                }
+                System.out.println("------------------");
+                System.out.println("Actual cycles:");
+                System.out.println("------------------");
+                for (Cycle cycle : busWatcher.cycleHistory) {
+                    System.out.println(cycle);
+                }
+                System.out.println("------------------");
 
-            System.out.println("Cycles do not match!");
-            //Print expected cycles
-            System.out.println("Expected cycles:");
-            System.out.println("------------------");
-            for(Cycle cycle : test.cycles) {
-                System.out.println(cycle);
+                break;
             }
-            System.out.println("------------------");
-            System.out.println("Actual cycles:");
-            System.out.println("------------------");
-            for(Cycle cycle : busWatcher.cycleHistory) {
-                System.out.println(cycle);
-            }
-            System.out.println("------------------");
 
         }
 
 
-
-        //assertTrue(success, "Cycles do not match");
-
-        return success;
+        assertTrue(failures.isEmpty(), String.join("\n", failures));
+        return failures.isEmpty();
     }
 
     private static void applyState(Jtx6502 cpu, CPUState state) {
@@ -311,7 +248,6 @@ public class CPUTest {
         int p, // Status register
         @SerializedName("ram") int[][] memory
     ) {
-
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
