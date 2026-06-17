@@ -23,6 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class CPUTest {
+    private static final Gson gson = new GsonBuilder().registerTypeAdapter(
+            Cycle.class, new CycleTypeAdapter()
+        ).create();
+
+
+    // We provide a list of files, each one testing one specific opcode, to the test
     private static Stream<Arguments> provideHarteTests() {
         File testFolder = new File(CPUTest.class.getResource("/TomHarteTests/").getFile());
         File[] files = testFolder.listFiles();
@@ -41,6 +47,7 @@ public class CPUTest {
                 });
     }
 
+    // Loads the json file and runs all the tests inside
     @ParameterizedTest(name = "{0}")
     @MethodSource("provideHarteTests")
     public void testHarteTestFile(String name, File testFile) throws IOException {
@@ -52,21 +59,10 @@ public class CPUTest {
             System.out.println("Opcode unknown");
             return;
         }
-
         System.out.println("Running " + testedInstruction.mnemonic + " tests (" + testFile.getName() + ")");
 
+
         String testsJson = Files.readString(testFile.toPath());
-
-        runJsonTests(testsJson);
-    }
-
-
-    // Runs all the tests for one of the instructions
-    private static void runJsonTests(String testsJson) {
-        Gson gson = new GsonBuilder().registerTypeAdapter(
-                Cycle.class, new CycleTypeAdapter()
-        ).create();
-
         HarteTest[] tests = gson.fromJson(testsJson, HarteTest[].class);
 
         for(HarteTest test : tests) {
@@ -80,7 +76,6 @@ public class CPUTest {
 
         System.out.println("\u001B[32m> Passed\u001B[0m");
     }
-
 
 
     // Runs a single test for one of the instructions
@@ -99,12 +94,7 @@ public class CPUTest {
             }
         }
 
-        if(test.name.equals("2a 07 56")) {
-            System.out.println("This one");
-        }
-
         BusWatcher busWatcher = new BusWatcher();
-
         cpu.bus.addBusDevice(busWatcher);
 
         //Set the CPU state to the initial state specified by the test
@@ -154,7 +144,6 @@ public class CPUTest {
         }
 
 
-        boolean cyclesMatch = true;
         //Compare the bus history to the cycles specified by the test
         for(int i = 0; i < Math.min(busWatcher.cycleHistory.size(), test.cycles.size()); i++) {
             Cycle actualCycle = busWatcher.cycleHistory.get(i);

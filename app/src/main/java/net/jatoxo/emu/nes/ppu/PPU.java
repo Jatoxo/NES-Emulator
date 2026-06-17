@@ -640,6 +640,12 @@ public class PPU extends BusDevice {
 			return;
 		}
 
+        // This whole thing is bad but renderState is null sometimes and I don't remember how everything works
+        // so I'm just going to take the current state if it is
+        if(renderState == null) {
+            renderState = new PPURenderState(ppuCtrl, ppuMask, tAddr, fineX);
+        }
+
 		int fineY = (renderState.tAddr.get() >> 12) & 0x7;
 
 		int address = renderState.tAddr.get() & 0x0FFF;
