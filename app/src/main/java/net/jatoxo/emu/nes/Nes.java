@@ -56,10 +56,17 @@ public class Nes {
         this(null);
     }
 
-    //TODO: maybe separate console logic, emulation logic, and gui logic?s
+    //TODO: maybe separate console logic, emulation logic, and gui logic?
 	public void start() {
 
-		while(!paused) {
+		while(true) {
+            while(paused) {
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
 			long lastTime = System.nanoTime();
 
 			advanceFrame();

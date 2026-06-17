@@ -109,6 +109,7 @@ public class GUI extends JFrame implements EmulationListener {
 		emuMenu.add(resetOption);
 
 		resetOption.addActionListener(e -> nes.reset());
+        pauseItem.addActionListener(e -> nes.paused = !nes.paused);
 		// --------------------------------------------
 
 		// --------------- TOOLS MENU -----------------
